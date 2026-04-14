@@ -22,6 +22,8 @@
 ```gitignore
 # Env
 .env
+frontend/.env
+frontend/.env.local
 
 # Backend
 backend/target/
@@ -51,6 +53,9 @@ DB_NAME=finance
 DB_SCHEMA=public
 DB_USERNAME=finance_user
 DB_PASSWORD=changeme
+
+# Frontend (Vite dev proxy target)
+VITE_API_URL=http://localhost:8080
 ```
 
 - [ ] **Step 3: Criar `Makefile`**
@@ -778,31 +783,40 @@ git commit -m "test: add health check integration test"
 }
 ```
 
-- [ ] **Step 5: Criar `frontend/vite.config.ts`**
+- [ ] **Step 5: Criar `frontend/.env.example`**
+
+```dotenv
+VITE_API_URL=http://localhost:8080
+```
+
+- [ ] **Step 6: Criar `frontend/vite.config.ts`**
 
 ```typescript
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 
-export default defineConfig({
-  plugins: [react()],
-  server: {
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8080',
-        changeOrigin: true,
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '')
+  return {
+    plugins: [react()],
+    server: {
+      proxy: {
+        '/api': {
+          target: env.VITE_API_URL || 'http://localhost:8080',
+          changeOrigin: true,
+        },
       },
     },
-  },
-  test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: './src/test/setup.ts',
-  },
+    test: {
+      globals: true,
+      environment: 'jsdom',
+      setupFiles: './src/test/setup.ts',
+    },
+  }
 })
 ```
 
-- [ ] **Step 6: Criar `frontend/index.html`**
+- [ ] **Step 7: Criar `frontend/index.html`**
 
 ```html
 <!doctype html>
@@ -819,13 +833,13 @@ export default defineConfig({
 </html>
 ```
 
-- [ ] **Step 7: Criar `frontend/src/test/setup.ts`**
+- [ ] **Step 8: Criar `frontend/src/test/setup.ts`**
 
 ```typescript
 import '@testing-library/jest-dom'
 ```
 
-- [ ] **Step 8: Criar `frontend/eslint.config.js`**
+- [ ] **Step 9: Criar `frontend/eslint.config.js`**
 
 ```javascript
 import js from '@eslint/js'
@@ -861,7 +875,7 @@ Adicionar dependência faltante:
 cd frontend && npm install --save-dev globals
 ```
 
-- [ ] **Step 9: Instalar dependências**
+- [ ] **Step 10: Instalar dependências**
 
 ```bash
 cd frontend && npm install
@@ -869,7 +883,7 @@ cd frontend && npm install
 
 Esperado: `node_modules/` criado sem erros.
 
-- [ ] **Step 10: Verificar lint**
+- [ ] **Step 11: Verificar lint**
 
 ```bash
 cd frontend && npm run lint
@@ -877,10 +891,10 @@ cd frontend && npm run lint
 
 Esperado: sem erros (apenas warnings de `react-refresh` são aceitáveis para páginas skeleton).
 
-- [ ] **Step 11: Commitar**
+- [ ] **Step 12: Commitar**
 
 ```bash
-git add frontend/package.json frontend/package-lock.json frontend/tsconfig*.json frontend/vite.config.ts frontend/index.html frontend/eslint.config.js frontend/src/test/setup.ts
+git add frontend/package.json frontend/package-lock.json frontend/tsconfig*.json frontend/vite.config.ts frontend/index.html frontend/eslint.config.js frontend/src/test/setup.ts frontend/.env.example
 git commit -m "chore: add frontend Vite + React + TypeScript setup"
 ```
 
