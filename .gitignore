@@ -1,0 +1,22 @@
+# Env
+.env
+frontend/.env
+frontend/.env.local
+
+# Backend
+backend/target/
+backend/*.jar
+backend/.mvn/repository/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
