@@ -78,6 +78,36 @@ services:
 RUN apt-get install -y tesseract-ocr tesseract-ocr-por
 ```
 
+### 3.4 Configuração via Variáveis de Ambiente
+
+Toda configuração sensível ou de ambiente é feita via variáveis de ambiente (nunca hardcoded). O `.env` é usado pelo Docker Compose; o `application.yml` do Spring Boot lê via `${VAR:default}`.
+
+**Variáveis obrigatórias:**
+
+| Variável | Descrição | Exemplo |
+|----------|-----------|---------|
+| `DB_HOST` | Host do banco | `db` |
+| `DB_PORT` | Porta do banco | `5432` |
+| `DB_NAME` | Nome do banco | `finance` |
+| `DB_SCHEMA` | Schema do banco | `public` |
+| `DB_USERNAME` | Usuário | `finance_user` |
+| `DB_PASSWORD` | Senha | `changeme` |
+
+**application.yml (Spring Boot):**
+```yaml
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:finance}?currentSchema=${DB_SCHEMA:public}
+    username: ${DB_USERNAME:finance_user}
+    password: ${DB_PASSWORD:changeme}
+  jpa:
+    properties:
+      hibernate:
+        default_schema: ${DB_SCHEMA:public}
+```
+
+**docker-compose.yml** lê de `.env` (não commitado — apenas `.env.example` no repositório).
+
 ---
 
 ## 4. Modelo de Dados
