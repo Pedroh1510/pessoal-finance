@@ -4,6 +4,7 @@ import br.com.phfinance.finance.domain.BankName;
 import br.com.phfinance.finance.domain.Transaction;
 import br.com.phfinance.finance.domain.TransactionType;
 import br.com.phfinance.finance.infra.TransactionRepository;
+import br.com.phfinance.finance.infra.TransactionSpecifications;
 import br.com.phfinance.shared.category.Category;
 import br.com.phfinance.shared.category.CategoryRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -13,6 +14,7 @@ import java.time.ZoneOffset;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,9 +47,10 @@ public class TransactionService {
             to = month.atEndOfMonth().atTime(23, 59, 59).atOffset(ZoneOffset.UTC);
         }
 
-        return transactionRepository
-                .findWithFilters(bank, categoryId, type, from, to, pageable)
-                .map(TransactionDTO::from);
+        Specification<Transaction> spec =
+                TransactionSpecifications.withFilters(bank, categoryId, type, from, to);
+
+        return transactionRepository.findAll(spec, pageable).map(TransactionDTO::from);
     }
 
     @Transactional
