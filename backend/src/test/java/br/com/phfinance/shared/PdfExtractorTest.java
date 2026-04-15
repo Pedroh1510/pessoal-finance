@@ -5,6 +5,9 @@ import br.com.phfinance.shared.fileparse.PdfExtractor;
 import net.sourceforge.tess4j.Tesseract;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -14,7 +17,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+@ExtendWith(MockitoExtension.class)
 class PdfExtractorTest {
+
+    @Mock
+    private Tesseract tesseract;
 
     private PdfExtractor pdfExtractor;
 
@@ -22,12 +29,12 @@ class PdfExtractorTest {
             "/home/pedro/www/ph/finance/exemplos/extratos/nubank/NU_143766978_01JAN2026_31JAN2026.pdf");
     private static final Path NEON_PDF = Path.of(
             "/home/pedro/www/ph/finance/exemplos/extratos/neon/Statement6391180046951199824747284281849d1b2df.pdf");
-    private static final Path INTER_PDF = Path.of(
+    private static final Path INTER_PDF_PATH = Path.of(
             "/home/pedro/www/ph/finance/exemplos/extratos/inter/Extrato-14-03-2026-a-14-04-2026-PDF.pdf");
 
     @BeforeEach
     void setUp() {
-        pdfExtractor = new PdfExtractor();
+        pdfExtractor = new PdfExtractor(tesseract);
     }
 
     // --- extractText() ---
@@ -112,14 +119,34 @@ class PdfExtractorTest {
 
     @Test
     void extractTextOcr_interPdf_returnsNonEmptyString() throws IOException {
-        assumeTrue(Files.exists(INTER_PDF), "Inter PDF not found, skipping");
-        assumeTrue(isTesseractAvailable(), "Tesseract not available, skipping OCR test");
+        assumeTrue(interPdfExists(), "Inter PDF not found");
+        assumeTrue(isTesseractAvailable(), "Tesseract not available");
 
-        byte[] pdfBytes = Files.readAllBytes(INTER_PDF);
+        PdfExtractor realExtractor = new PdfExtractor(buildRealTesseract());
+        byte[] pdfBytes = Files.readAllBytes(INTER_PDF_PATH);
 
-        String text = pdfExtractor.extractTextOcr(pdfBytes);
+        String text = realExtractor.extractTextOcr(pdfBytes);
 
         assertThat(text).isNotBlank();
+    }
+
+    @Test
+    void extractTextOcr_interPdf_containsExpectedContent() throws IOException {
+        assumeTrue(interPdfExists(), "Inter PDF not found");
+        assumeTrue(isTesseractAvailable(), "Tesseract not available");
+
+        PdfExtractor realExtractor = new PdfExtractor(buildRealTesseract());
+        byte[] pdfBytes = Files.readAllBytes(INTER_PDF_PATH);
+
+        String text = realExtractor.extractTextOcr(pdfBytes);
+
+        assertThat(text.toLowerCase()).containsAnyOf("inter", "extrato", "saldo", "banco", "transferência");
+    }
+
+    // --- helpers ---
+
+    private boolean interPdfExists() {
+        return Files.exists(INTER_PDF_PATH);
     }
 
     /**
@@ -128,15 +155,19 @@ class PdfExtractorTest {
      */
     private boolean isTesseractAvailable() {
         try {
-            Tesseract tesseract = new Tesseract();
-            tesseract.setLanguage("por");
-            // Use a 1x1 blank BufferedImage to probe the native library without real data
-            java.awt.image.BufferedImage probe = new java.awt.image.BufferedImage(
+            Tesseract probe = buildRealTesseract();
+            java.awt.image.BufferedImage img = new java.awt.image.BufferedImage(
                     10, 10, java.awt.image.BufferedImage.TYPE_INT_RGB);
-            tesseract.doOCR(probe);
+            probe.doOCR(img);
             return true;
-        } catch (UnsatisfiedLinkError | Exception e) {
+        } catch (Throwable e) {
             return false;
         }
+    }
+
+    private Tesseract buildRealTesseract() {
+        Tesseract t = new Tesseract();
+        t.setLanguage("por");
+        return t;
     }
 }
