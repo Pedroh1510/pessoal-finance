@@ -12,6 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.Positive;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -38,6 +39,7 @@ public class Transaction {
     @Column(nullable = false, columnDefinition = "TIMESTAMPTZ")
     private OffsetDateTime date;
 
+    @Positive
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal amount;
 
