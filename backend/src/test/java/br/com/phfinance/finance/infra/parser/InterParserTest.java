@@ -174,6 +174,21 @@ class InterParserTest {
         );
     }
 
+    // --- Unknown month in date line ---
+
+    @Test
+    @DisplayName("parse unknown month in date line skips transactions")
+    void parse_unknownMonthInDateLine_skipsTransactions() {
+        // Date line matches the DATE_PATTERN regex but uses an unrecognized month name,
+        // so parseDate() returns null and the transaction block is skipped.
+        String text = "18 de Inexistentembro de 2026 Saldo do dia: R$ 1.000,00\n" +
+                      "Pix recebido: \"Cp :18236120-Pedro Henrique\" R$ 500,00 R$ 1.500,00";
+
+        List<RawTransaction> result = parser.parse(text);
+
+        assertThat(result).isEmpty();
+    }
+
     // --- Real PDF ---
 
     @Test
