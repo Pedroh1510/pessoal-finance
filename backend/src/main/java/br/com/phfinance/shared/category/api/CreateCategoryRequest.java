@@ -1,3 +1,5 @@
 package br.com.phfinance.shared.category.api;
 
-public record CreateCategoryRequest(String name, String color) {}
+import jakarta.validation.constraints.NotBlank;
+
+public record CreateCategoryRequest(@NotBlank String name, @NotBlank String color) {}

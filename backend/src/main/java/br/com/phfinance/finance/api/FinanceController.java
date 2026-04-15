@@ -12,6 +12,8 @@ import br.com.phfinance.finance.domain.BankName;
 import br.com.phfinance.finance.domain.TransactionType;
 import java.time.YearMonth;
 import java.util.UUID;
+import java.io.IOException;
+import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -27,6 +29,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/finance")
@@ -51,9 +54,14 @@ public class FinanceController {
     @PostMapping(value = "/uploads", consumes = "multipart/form-data")
     public ResponseEntity<UploadResult> upload(
             @RequestParam("file") MultipartFile file,
-            @RequestParam("bankName") String bankName) throws Exception {
+            @RequestParam("bankName") String bankName) {
         BankName bank = BankName.valueOf(bankName.toUpperCase());
-        byte[] bytes = file.getBytes();
+        byte[] bytes;
+        try {
+            bytes = file.getBytes();
+        } catch (IOException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Failed to read uploaded file");
+        }
         UploadResult result = statementUploadService.upload(bytes, bank);
         return ResponseEntity.ok(result);
     }
@@ -73,13 +81,13 @@ public class FinanceController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void categorize(
             @PathVariable UUID id,
-            @RequestBody CategorizeRequest request) {
+            @Valid @RequestBody CategorizeRequest request) {
         transactionService.categorize(id, request.categoryId());
     }
 
     @PostMapping("/rules/recipient")
     public ResponseEntity<RecipientCategoryRuleDTO> createRecipientRule(
-            @RequestBody CreateRecipientRuleRequest request) {
+            @Valid @RequestBody CreateRecipientRuleRequest request) {
         RecipientCategoryRuleDTO dto = recipientRuleService.create(
                 request.recipientPattern(), request.categoryId());
         return ResponseEntity.status(HttpStatus.CREATED).body(dto);
@@ -93,7 +101,7 @@ public class FinanceController {
 
     @PostMapping("/rules/internal-accounts")
     public ResponseEntity<InternalAccountRuleDTO> createInternalAccountRule(
-            @RequestBody CreateInternalAccountRuleRequest request) {
+            @Valid @RequestBody CreateInternalAccountRuleRequest request) {
         InternalAccountRuleDTO dto = internalAccountRuleService.create(
                 request.identifier(), request.type());
         return ResponseEntity.status(HttpStatus.CREATED).body(dto);

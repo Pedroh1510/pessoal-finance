@@ -4,6 +4,7 @@ import br.com.phfinance.finance.application.CategoryDTO;
 import br.com.phfinance.finance.application.CategoryService;
 import java.util.List;
 import java.util.UUID;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -32,7 +33,7 @@ public class CategoryController {
     }
 
     @PostMapping
-    public ResponseEntity<CategoryDTO> create(@RequestBody CreateCategoryRequest request) {
+    public ResponseEntity<CategoryDTO> create(@Valid @RequestBody CreateCategoryRequest request) {
         CategoryDTO dto = categoryService.create(request.name(), request.color());
         return ResponseEntity.status(HttpStatus.CREATED).body(dto);
     }
@@ -40,7 +41,7 @@ public class CategoryController {
     @PutMapping("/{id}")
     public CategoryDTO update(
             @PathVariable UUID id,
-            @RequestBody CreateCategoryRequest request) {
+            @Valid @RequestBody CreateCategoryRequest request) {
         return categoryService.update(id, request.name(), request.color());
     }
 

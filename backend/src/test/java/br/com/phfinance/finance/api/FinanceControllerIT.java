@@ -11,8 +11,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import br.com.phfinance.finance.application.CategoryDTO;
 import br.com.phfinance.finance.application.CategoryService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.File;
-import java.nio.file.Files;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -47,12 +45,19 @@ class FinanceControllerIT {
     @Autowired
     CategoryService categoryService;
 
-    private static final String NUBANK_PDF =
-            "/home/pedro/www/ph/finance/exemplos/extratos/nubank/NU_143766978_01JAN2026_31JAN2026.pdf";
+    private byte[] loadNubankPdf() throws Exception {
+        try (var stream = getClass().getClassLoader()
+                .getResourceAsStream("fixtures/nubank-jan-2026.pdf")) {
+            if (stream == null) {
+                throw new IllegalStateException("fixtures/nubank-jan-2026.pdf not found in classpath");
+            }
+            return stream.readAllBytes();
+        }
+    }
 
     @Test
     void uploadNubankStatement_returns200_withTotalGreaterThanZero() throws Exception {
-        byte[] pdfBytes = Files.readAllBytes(new File(NUBANK_PDF).toPath());
+        byte[] pdfBytes = loadNubankPdf();
         MockMultipartFile file = new MockMultipartFile(
                 "file", "statement.pdf", "application/pdf", pdfBytes);
 
@@ -81,7 +86,7 @@ class FinanceControllerIT {
     @Test
     void categorizeTransaction_returns204() throws Exception {
         // Upload first to have a transaction
-        byte[] pdfBytes = Files.readAllBytes(new File(NUBANK_PDF).toPath());
+        byte[] pdfBytes = loadNubankPdf();
         MockMultipartFile file = new MockMultipartFile(
                 "file", "statement.pdf", "application/pdf", pdfBytes);
 
