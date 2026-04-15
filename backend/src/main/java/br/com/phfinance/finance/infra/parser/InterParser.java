@@ -58,6 +58,12 @@ public class InterParser implements BankStatementParser {
             "^([^:\"]+):\\s*\"([^\"]+)\"\\s+(-?)R\\$\\s+([\\d.]+,\\d{2})"
     );
 
+    /**
+     * Matches Inter "Cp" prefix in description: "Cp :XXXXXXXX-NAME"
+     * group 1 = the human-readable name after the dash
+     */
+    private static final Pattern CP_PREFIX = Pattern.compile("^Cp\\s*:\\s*\\d+-(.+)$");
+
     @Override
     public List<RawTransaction> parse(String extractedText) {
         if (extractedText == null || extractedText.isBlank()) {
@@ -142,8 +148,7 @@ public class InterParser implements BankStatementParser {
      */
     private String extractRecipient(String description) {
         // Format: "Cp :00000000-MDSMP PAROQUIA CRISTO REDENTOR" or "Cp :18236120-Pedro Henrique"
-        Pattern cpPrefix = Pattern.compile("^Cp\\s*:\\s*\\d+-(.+)$");
-        Matcher m = cpPrefix.matcher(description);
+        Matcher m = CP_PREFIX.matcher(description);
         if (m.matches()) {
             return m.group(1).trim();
         }

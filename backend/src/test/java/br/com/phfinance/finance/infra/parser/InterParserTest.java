@@ -189,6 +189,31 @@ class InterParserTest {
         assertThat(result).isEmpty();
     }
 
+    // --- Bad month mid-file (after valid transactions) ---
+
+    @Test
+    @DisplayName("parse unknown month after valid date returns transactions before bad date, skips after")
+    void parse_unknownMonthAfterValidDate_returnsTransactionsBeforeBadDate() {
+        // Valid date line → transaction (should be returned)
+        // Bad month date line (DATE_PATTERN matches but month is unrecognised) → currentDate becomes null
+        // Transaction after bad date line → should be skipped
+        String text = """
+                18 de Março de 2026 Saldo do dia: R$ 10,71
+                Pix enviado: "Cp :00000000-MDSMP PAROQUIA CRISTO REDENTOR" -R$ 10,00 R$ 10,71
+                5 de Inexistentembro de 2026 Saldo do dia: R$ 0,00
+                Pix recebido: "Cp :18236120-Pedro Henrique Martins da Silva" R$ 500,00 R$ 500,00
+                """;
+
+        List<RawTransaction> result = parser.parse(text);
+
+        // The valid transaction before the bad date must be present
+        assertThat(result).hasSizeGreaterThanOrEqualTo(1);
+        // The first (and only valid) transaction must be from the good date
+        assertThat(result.get(0).date().toLocalDate()).isEqualTo(LocalDate.of(2026, 3, 18));
+        // The transaction after the bad date line must NOT appear (total should be exactly 1)
+        assertThat(result).hasSize(1);
+    }
+
     // --- Real PDF ---
 
     @Test
