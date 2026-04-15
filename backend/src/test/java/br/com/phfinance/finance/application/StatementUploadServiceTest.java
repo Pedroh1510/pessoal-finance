@@ -1,6 +1,7 @@
 package br.com.phfinance.finance.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -280,6 +281,27 @@ class StatementUploadServiceTest {
         assertThat(result.total()).isEqualTo(2);
         assertThat(result.internalTransfers()).isZero();
         assertThat(result.uncategorized()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("upload throws IllegalArgumentException when no parser registered for bank")
+    void upload_throwsWhenNoParserForBank() {
+        // Build a service with an empty parsers list so no bank is registered
+        StatementUploadService serviceWithNoParsers = new StatementUploadService(
+                pdfExtractor,
+                List.of(),
+                bankAccountRepository,
+                transactionRepository,
+                recipientCategoryRuleRepository,
+                internalAccountRuleRepository,
+                internalTransferRepository,
+                internalTransferDetector);
+
+        when(pdfExtractor.extractText(DUMMY_PDF)).thenReturn("some text");
+
+        assertThatThrownBy(() -> serviceWithNoParsers.upload(DUMMY_PDF, BankName.INTER))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("INTER");
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────

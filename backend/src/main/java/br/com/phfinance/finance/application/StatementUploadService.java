@@ -90,12 +90,14 @@ public class StatementUploadService {
             transactionRepository.save(tx);
 
             Optional<Transaction> match = internalTransferDetector.findAutoMatch(tx, transactionRepository);
+            boolean isInternalTransfer = false;
             if (match.isPresent()) {
                 createInternalTransfer(tx, match.get());
                 internalTransfers++;
+                isInternalTransfer = true;
             }
 
-            if (tx.getCategory() == null) {
+            if (!isInternalTransfer && tx.getCategory() == null) {
                 uncategorized++;
             }
         }

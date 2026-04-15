@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -29,10 +30,13 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
     Page<Transaction> findByAccountBankNameAndDateBetween(
         BankName bankName, OffsetDateTime from, OffsetDateTime to, Pageable pageable);
 
+    @EntityGraph(attributePaths = {"account", "category"})
     @Query("""
         SELECT t FROM Transaction t
-        WHERE (:bank IS NULL OR t.account.bankName = :bank)
-        AND (:categoryId IS NULL OR t.category.id = :categoryId)
+        LEFT JOIN t.category c
+        LEFT JOIN t.account a
+        WHERE (:bank IS NULL OR a.bankName = :bank)
+        AND (:categoryId IS NULL OR c.id = :categoryId)
         AND (:type IS NULL OR t.type = :type)
         AND (:from IS NULL OR t.date >= :from)
         AND (:to IS NULL OR t.date <= :to)
