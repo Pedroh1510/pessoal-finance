@@ -3,6 +3,7 @@ package br.com.phfinance.finance.infra;
 import br.com.phfinance.finance.domain.BankAccount;
 import br.com.phfinance.finance.domain.Transaction;
 import br.com.phfinance.finance.domain.BankName;
+import br.com.phfinance.finance.domain.TransactionType;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -27,4 +28,21 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
 
     Page<Transaction> findByAccountBankNameAndDateBetween(
         BankName bankName, OffsetDateTime from, OffsetDateTime to, Pageable pageable);
+
+    @Query("""
+        SELECT t FROM Transaction t
+        WHERE (:bank IS NULL OR t.account.bankName = :bank)
+        AND (:categoryId IS NULL OR t.category.id = :categoryId)
+        AND (:type IS NULL OR t.type = :type)
+        AND (:from IS NULL OR t.date >= :from)
+        AND (:to IS NULL OR t.date <= :to)
+        """)
+    Page<Transaction> findWithFilters(
+        @Param("bank") BankName bank,
+        @Param("categoryId") UUID categoryId,
+        @Param("type") TransactionType type,
+        @Param("from") OffsetDateTime from,
+        @Param("to") OffsetDateTime to,
+        Pageable pageable
+    );
 }

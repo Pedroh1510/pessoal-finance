@@ -1,5 +1,6 @@
 package br.com.phfinance.finance.infra.parser;
 
+import br.com.phfinance.finance.domain.BankName;
 import br.com.phfinance.finance.domain.RawTransaction;
 import br.com.phfinance.finance.domain.TransactionType;
 import org.slf4j.Logger;
@@ -58,6 +59,11 @@ public class NubankParser implements BankStatementParser {
     private static final Pattern CPF_SUFFIX = Pattern.compile(
             "\\s*-\\s*[•\\d]+[.\\d•\\-]*[•\\d]+\\s*-?\\s*$"
     );
+
+    @Override
+    public BankName getBankName() {
+        return BankName.NUBANK;
+    }
 
     @Override
     public List<RawTransaction> parse(String extractedText) {

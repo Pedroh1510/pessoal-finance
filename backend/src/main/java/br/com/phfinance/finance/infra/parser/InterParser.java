@@ -1,5 +1,6 @@
 package br.com.phfinance.finance.infra.parser;
 
+import br.com.phfinance.finance.domain.BankName;
 import br.com.phfinance.finance.domain.RawTransaction;
 import br.com.phfinance.finance.domain.TransactionType;
 import org.slf4j.Logger;
@@ -63,6 +64,11 @@ public class InterParser implements BankStatementParser {
      * group 1 = the human-readable name after the dash
      */
     private static final Pattern CP_PREFIX = Pattern.compile("^Cp\\s*:\\s*\\d+-(.+)$");
+
+    @Override
+    public BankName getBankName() {
+        return BankName.INTER;
+    }
 
     @Override
     public List<RawTransaction> parse(String extractedText) {

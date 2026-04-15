@@ -1,5 +1,6 @@
 package br.com.phfinance.finance.infra.parser;
 
+import br.com.phfinance.finance.domain.BankName;
 import br.com.phfinance.finance.domain.RawTransaction;
 
 import java.util.List;
@@ -9,6 +10,11 @@ import java.util.List;
  * Each bank implementation handles its own PDF text format.
  */
 public interface BankStatementParser {
+
+    /**
+     * Returns the bank this parser handles.
+     */
+    BankName getBankName();
 
     /**
      * Parses extracted PDF text into a list of raw transactions.

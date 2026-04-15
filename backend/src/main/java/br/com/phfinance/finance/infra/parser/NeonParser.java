@@ -1,5 +1,6 @@
 package br.com.phfinance.finance.infra.parser;
 
+import br.com.phfinance.finance.domain.BankName;
 import br.com.phfinance.finance.domain.RawTransaction;
 import br.com.phfinance.finance.domain.TransactionType;
 import org.slf4j.Logger;
@@ -45,6 +46,11 @@ public class NeonParser implements BankStatementParser {
     private static final Pattern ROW_PATTERN = Pattern.compile(
             "^(.+?)\\s+(\\d{2}/\\d{2}/\\d{4})\\s+(\\d{2})[\\s\u0000]+(\\d{2})[\\s\u0000]+R\\$\\s+([\\d.]+,\\d{2})\\s+R\\$\\s+[\\d.,]"
     );
+
+    @Override
+    public BankName getBankName() {
+        return BankName.NEON;
+    }
 
     @Override
     public List<RawTransaction> parse(String extractedText) {
