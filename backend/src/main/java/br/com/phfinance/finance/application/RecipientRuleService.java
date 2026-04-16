@@ -5,6 +5,7 @@ import br.com.phfinance.finance.infra.RecipientCategoryRuleRepository;
 import br.com.phfinance.shared.category.Category;
 import br.com.phfinance.shared.category.CategoryRepository;
 import jakarta.persistence.EntityNotFoundException;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +22,13 @@ public class RecipientRuleService {
             CategoryRepository categoryRepository) {
         this.ruleRepository = ruleRepository;
         this.categoryRepository = categoryRepository;
+    }
+
+    @Transactional(readOnly = true)
+    public List<RecipientCategoryRuleDTO> findAll() {
+        return ruleRepository.findAll().stream()
+                .map(RecipientCategoryRuleDTO::from)
+                .toList();
     }
 
     public RecipientCategoryRuleDTO create(String recipientPattern, UUID categoryId) {

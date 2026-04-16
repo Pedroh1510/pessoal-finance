@@ -32,6 +32,12 @@ public class TransactionService {
         this.categoryRepository = categoryRepository;
     }
 
+    public TransactionDTO findById(UUID id) {
+        Transaction tx = transactionRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Transaction not found: " + id));
+        return TransactionDTO.from(tx);
+    }
+
     public Page<TransactionDTO> findAll(
             YearMonth month,
             UUID categoryId,

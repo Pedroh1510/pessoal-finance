@@ -60,7 +60,7 @@ export async function getTransaction(id: string): Promise<TransactionDTO> {
 }
 
 export async function categorizeTransaction(id: string, categoryId: string): Promise<void> {
-  await api.patch(`/finance/transactions/${id}/category`, { categoryId })
+  await api.put(`/finance/transactions/${id}/category`, { categoryId })
 }
 
 export async function uploadStatement(file: File, bankName: BankName): Promise<UploadResult> {
@@ -74,7 +74,7 @@ export async function uploadStatement(file: File, bankName: BankName): Promise<U
 }
 
 export async function getRecipientRules(): Promise<RecipientRuleDTO[]> {
-  const { data } = await api.get<RecipientRuleDTO[]>('/finance/recipient-rules')
+  const { data } = await api.get<RecipientRuleDTO[]>('/finance/rules/recipient')
   return data
 }
 
@@ -82,15 +82,15 @@ export async function createRecipientRule(
   recipientPattern: string,
   categoryId: string,
 ): Promise<void> {
-  await api.post('/finance/recipient-rules', { recipientPattern, categoryId })
+  await api.post('/finance/rules/recipient', { recipientPattern, categoryId })
 }
 
 export async function deleteRecipientRule(id: string): Promise<void> {
-  await api.delete(`/finance/recipient-rules/${id}`)
+  await api.delete(`/finance/rules/recipient/${id}`)
 }
 
 export async function getInternalAccountRules(): Promise<InternalAccountRuleDTO[]> {
-  const { data } = await api.get<InternalAccountRuleDTO[]>('/finance/internal-account-rules')
+  const { data } = await api.get<InternalAccountRuleDTO[]>('/finance/rules/internal-accounts')
   return data
 }
 
@@ -98,9 +98,9 @@ export async function createInternalAccountRule(
   identifier: string,
   type: string,
 ): Promise<void> {
-  await api.post('/finance/internal-account-rules', { identifier, type })
+  await api.post('/finance/rules/internal-accounts', { identifier, type })
 }
 
 export async function deleteInternalAccountRule(id: string): Promise<void> {
-  await api.delete(`/finance/internal-account-rules/${id}`)
+  await api.delete(`/finance/rules/internal-accounts/${id}`)
 }

@@ -4,6 +4,7 @@ import br.com.phfinance.finance.domain.InternalAccountRule;
 import br.com.phfinance.finance.domain.InternalAccountRuleType;
 import br.com.phfinance.finance.infra.InternalAccountRuleRepository;
 import jakarta.persistence.EntityNotFoundException;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +17,13 @@ public class InternalAccountRuleService {
 
     public InternalAccountRuleService(InternalAccountRuleRepository ruleRepository) {
         this.ruleRepository = ruleRepository;
+    }
+
+    @Transactional(readOnly = true)
+    public List<InternalAccountRuleDTO> findAll() {
+        return ruleRepository.findAll().stream()
+                .map(InternalAccountRuleDTO::from)
+                .toList();
     }
 
     public InternalAccountRuleDTO create(String identifier, InternalAccountRuleType type) {

@@ -10,6 +10,7 @@ import br.com.phfinance.finance.application.TransactionService;
 import br.com.phfinance.finance.application.UploadResult;
 import br.com.phfinance.finance.domain.BankName;
 import br.com.phfinance.finance.domain.TransactionType;
+import java.util.List;
 import java.time.YearMonth;
 import java.util.UUID;
 import java.io.IOException;
@@ -85,6 +86,16 @@ public class FinanceController {
         transactionService.categorize(id, request.categoryId());
     }
 
+    @GetMapping("/transactions/{id}")
+    public TransactionDTO getTransaction(@PathVariable UUID id) {
+        return transactionService.findById(id);
+    }
+
+    @GetMapping("/rules/recipient")
+    public List<RecipientCategoryRuleDTO> getRecipientRules() {
+        return recipientRuleService.findAll();
+    }
+
     @PostMapping("/rules/recipient")
     public ResponseEntity<RecipientCategoryRuleDTO> createRecipientRule(
             @Valid @RequestBody CreateRecipientRuleRequest request) {
@@ -97,6 +108,11 @@ public class FinanceController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteRecipientRule(@PathVariable UUID id) {
         recipientRuleService.delete(id);
+    }
+
+    @GetMapping("/rules/internal-accounts")
+    public List<InternalAccountRuleDTO> getInternalAccountRules() {
+        return internalAccountRuleService.findAll();
     }
 
     @PostMapping("/rules/internal-accounts")
