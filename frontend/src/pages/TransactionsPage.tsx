@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { getTransactions, BankName, TransactionType } from '../lib/finance'
 import { getCategories } from '../lib/categories'
+import MonthPicker from '../components/MonthPicker'
 
 const BRL = (amount: number) =>
   amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -12,6 +13,22 @@ const TYPE_LABELS: Record<TransactionType, string> = {
   EXPENSE: 'Despesa',
   INTERNAL_TRANSFER: 'Transferência Interna',
 }
+
+type SortDir = 'asc' | 'desc'
+
+interface Column {
+  label: string
+  field: string | null
+}
+
+const COLUMNS: Column[] = [
+  { label: 'Data', field: 'date' },
+  { label: 'Valor', field: 'amount' },
+  { label: 'Destinatário', field: 'recipient' },
+  { label: 'Descrição', field: 'description' },
+  { label: 'Categoria', field: null },
+  { label: 'Tipo', field: 'type' },
+]
 
 export default function TransactionsPage() {
   const navigate = useNavigate()
@@ -23,9 +40,13 @@ export default function TransactionsPage() {
   const [categoryId, setCategoryId] = useState('')
   const [type, setType] = useState<TransactionType | ''>('')
   const [page, setPage] = useState(0)
+  const [sortField, setSortField] = useState('date')
+  const [sortDir, setSortDir] = useState<SortDir>('desc')
+
+  const sort = `${sortField},${sortDir}`
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['transactions', month, bank, categoryId, type, page],
+    queryKey: ['transactions', month, bank, categoryId, type, page, sort],
     queryFn: () =>
       getTransactions({
         month,
@@ -34,6 +55,7 @@ export default function TransactionsPage() {
         type: type || undefined,
         page,
         size: 20,
+        sort,
       }),
   })
 
@@ -43,6 +65,23 @@ export default function TransactionsPage() {
   })
 
   const handleFilterChange = () => setPage(0)
+
+  function handleSort(field: string | null) {
+    if (!field) return
+    if (field === sortField) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortField(field)
+      setSortDir('desc')
+    }
+    setPage(0)
+  }
+
+  function sortIcon(field: string | null) {
+    if (!field) return null
+    if (field !== sortField) return <span style={{ opacity: 0.3, marginLeft: '0.3rem' }}>↕</span>
+    return <span style={{ marginLeft: '0.3rem' }}>{sortDir === 'asc' ? '↑' : '↓'}</span>
+  }
 
   return (
     <div>
@@ -59,11 +98,9 @@ export default function TransactionsPage() {
       >
         <label style={labelStyle}>
           Mês
-          <input
-            type="month"
+          <MonthPicker
             value={month}
-            onChange={(e) => { setMonth(e.target.value); handleFilterChange() }}
-            style={inputStyle}
+            onChange={(v) => { setMonth(v); handleFilterChange() }}
           />
         </label>
 
@@ -121,13 +158,20 @@ export default function TransactionsPage() {
             <table style={tableStyle}>
               <thead>
                 <tr>
-                  {['Data', 'Valor', 'Destinatário', 'Descrição', 'Categoria', 'Tipo'].map(
-                    (h) => (
-                      <th key={h} style={thStyle}>
-                        {h}
-                      </th>
-                    ),
-                  )}
+                  {COLUMNS.map(({ label, field }) => (
+                    <th
+                      key={label}
+                      style={{
+                        ...thStyle,
+                        cursor: field ? 'pointer' : 'default',
+                        userSelect: 'none',
+                      }}
+                      onClick={() => handleSort(field)}
+                    >
+                      {label}
+                      {sortIcon(field)}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>

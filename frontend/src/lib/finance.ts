@@ -49,6 +49,7 @@ export async function getTransactions(params: {
   type?: TransactionType
   page?: number
   size?: number
+  sort?: string
 }): Promise<Page<TransactionDTO>> {
   const { data } = await api.get<Page<TransactionDTO>>('/finance/transactions', { params })
   return data

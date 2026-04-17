@@ -3,7 +3,6 @@ package br.com.phfinance.finance.infra;
 import br.com.phfinance.finance.domain.BankName;
 import br.com.phfinance.finance.domain.Transaction;
 import br.com.phfinance.finance.domain.TransactionType;
-import jakarta.persistence.criteria.JoinType;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import org.springframework.data.jpa.domain.Specification;
@@ -29,10 +28,7 @@ public final class TransactionSpecifications {
 
     private static Specification<Transaction> hasBankName(BankName bank) {
         if (bank == null) return null;
-        return (root, query, cb) -> {
-            root.fetch("account", JoinType.LEFT);
-            return cb.equal(root.get("account").get("bankName"), bank);
-        };
+        return (root, query, cb) -> cb.equal(root.get("account").get("bankName"), bank);
     }
 
     private static Specification<Transaction> hasCategoryId(UUID categoryId) {

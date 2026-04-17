@@ -39,11 +39,11 @@ describe('TransactionsPage', () => {
     expect(screen.getByRole('heading', { name: /transações/i })).toBeInTheDocument()
   })
 
-  it('renders month filter input', () => {
+  it('renders month picker with navigation buttons', () => {
     render(<TransactionsPage />, { wrapper: createWrapper() })
-    const monthInput = screen.getByLabelText(/mês/i)
-    expect(monthInput).toBeInTheDocument()
-    expect(monthInput).toHaveAttribute('type', 'month')
+    expect(screen.getByText(/mês/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /mês anterior/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /próximo mês/i })).toBeInTheDocument()
   })
 
   it('renders bank filter select', () => {
