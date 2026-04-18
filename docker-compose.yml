@@ -4,7 +4,7 @@ services:
     environment:
       POSTGRES_DB: ${DB_NAME:-finance}
       POSTGRES_USER: ${DB_USERNAME:-finance_user}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
@@ -27,7 +27,7 @@ services:
       DB_NAME: ${DB_NAME:-finance}
       DB_SCHEMA: ${DB_SCHEMA:-public}
       DB_USERNAME: ${DB_USERNAME:-finance_user}
-      DB_PASSWORD: ${DB_PASSWORD:-changeme}
+      DB_PASSWORD: ${DB_PASSWORD}
     depends_on:
       db:
         condition: service_healthy
