@@ -83,21 +83,26 @@ public class StatementUploadService {
 
             applyRecipientCategoryRule(tx, categoryRules);
 
-            if (internalTransferDetector.matchesInternalAccountRule(tx, accountRules)) {
+            boolean ruleMatch = internalTransferDetector.matchesInternalAccountRule(tx, accountRules);
+            if (ruleMatch) {
                 tx.setType(TransactionType.INTERNAL_TRANSFER);
             }
 
             transactionRepository.save(tx);
 
-            Optional<Transaction> match = internalTransferDetector.findAutoMatch(tx, transactionRepository);
-            boolean isInternalTransfer = false;
-            if (match.isPresent()) {
-                createInternalTransfer(tx, match.get());
-                internalTransfers++;
-                isInternalTransfer = true;
+            boolean isInternalTransfer = ruleMatch;
+
+            if (!ruleMatch) {
+                Optional<Transaction> match = internalTransferDetector.findAutoMatch(tx, transactionRepository);
+                if (match.isPresent()) {
+                    createInternalTransfer(tx, match.get());
+                    isInternalTransfer = true;
+                }
             }
 
-            if (!isInternalTransfer && tx.getCategory() == null) {
+            if (isInternalTransfer) {
+                internalTransfers++;
+            } else if (tx.getCategory() == null) {
                 uncategorized++;
             }
         }

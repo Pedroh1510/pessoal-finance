@@ -83,6 +83,40 @@ class InternalTransferDetectorTest {
 
             assertThat(result).isTrue();
         }
+
+        @Test
+        @DisplayName("returns true when recipient is null but description contains identifier")
+        void returnsTrue_whenRecipientIsNull_andDescriptionContainsIdentifier() {
+            Transaction tx = transactionWithDescription(null, "Transferência enviada pelo Pix Pedro Henrique Martins da Silva");
+            List<InternalAccountRule> rules = List.of(ruleWithIdentifier("Pedro Henrique"));
+
+            boolean result = detector.matchesInternalAccountRule(tx, rules);
+
+            assertThat(result).isTrue();
+        }
+
+        @Test
+        @DisplayName("returns true when recipient and description are null but rawText contains identifier")
+        void returnsTrue_whenRecipientAndDescriptionAreNull_andRawTextContainsIdentifier() {
+            Transaction tx = transactionWithRawText(null, null,
+                "Transferência enviada pelo Pix Pedro Henrique\nNEON PAGAMENTOS S.A. IP\n1.500,00");
+            List<InternalAccountRule> rules = List.of(ruleWithIdentifier("NEON PAGAMENTOS"));
+
+            boolean result = detector.matchesInternalAccountRule(tx, rules);
+
+            assertThat(result).isTrue();
+        }
+
+        @Test
+        @DisplayName("returns true when only description contains identifier, not recipient")
+        void returnsTrue_whenDescriptionContainsIdentifier_recipientDoesNot() {
+            Transaction tx = transactionWithDescription("Compra débito", "Transferência Neon Pedro Henrique");
+            List<InternalAccountRule> rules = List.of(ruleWithIdentifier("Pedro Henrique"));
+
+            boolean result = detector.matchesInternalAccountRule(tx, rules);
+
+            assertThat(result).isTrue();
+        }
     }
 
     @Nested
@@ -151,6 +185,21 @@ class InternalTransferDetectorTest {
     private Transaction transactionWithRecipient(String recipient) {
         Transaction tx = new Transaction();
         tx.setRecipient(recipient);
+        return tx;
+    }
+
+    private Transaction transactionWithDescription(String recipient, String description) {
+        Transaction tx = new Transaction();
+        tx.setRecipient(recipient);
+        tx.setDescription(description);
+        return tx;
+    }
+
+    private Transaction transactionWithRawText(String recipient, String description, String rawText) {
+        Transaction tx = new Transaction();
+        tx.setRecipient(recipient);
+        tx.setDescription(description);
+        tx.setRawText(rawText);
         return tx;
     }
 
