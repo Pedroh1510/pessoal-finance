@@ -98,9 +98,10 @@ public class FinanceController {
             @RequestParam(required = false) UUID categoryId,
             @RequestParam(required = false) BankName bank,
             @RequestParam(required = false) TransactionType type,
+            @RequestParam(required = false) String search,
             Pageable pageable) {
         YearMonth yearMonth = month != null ? YearMonth.parse(month) : null;
-        return transactionService.findAll(yearMonth, categoryId, bank, type, pageable);
+        return transactionService.findAll(yearMonth, categoryId, bank, type, search, pageable);
     }
 
     @PutMapping("/transactions/{id}/category")

@@ -65,4 +65,9 @@ describe('TransactionsPage', () => {
     render(<TransactionsPage />, { wrapper: createWrapper() })
     expect(screen.getByText(/carregando/i)).toBeInTheDocument()
   })
+
+  it('renders search input', () => {
+    render(<TransactionsPage />, { wrapper: createWrapper() })
+    expect(screen.getByLabelText(/busca por descrição ou destinatário/i)).toBeInTheDocument()
+  })
 })

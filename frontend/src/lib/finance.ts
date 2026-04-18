@@ -47,6 +47,7 @@ export async function getTransactions(params: {
   categoryId?: string
   bank?: BankName
   type?: TransactionType
+  search?: string
   page?: number
   size?: number
   sort?: string

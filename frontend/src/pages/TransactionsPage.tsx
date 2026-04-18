@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { getTransactions, BankName, TransactionType } from '../lib/finance'
 import { getCategories } from '../lib/categories'
 import MonthPicker from '../components/MonthPicker'
+import { useDebounce } from '../hooks/useDebounce'
 
 const BRL = (amount: number) =>
   amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -42,17 +43,24 @@ export default function TransactionsPage() {
   const [page, setPage] = useState(0)
   const [sortField, setSortField] = useState('date')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
+  const [search, setSearch] = useState('')
+  const debouncedSearch = useDebounce(search, 300)
+
+  useEffect(() => {
+    setPage(0)
+  }, [debouncedSearch])
 
   const sort = `${sortField},${sortDir}`
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['transactions', month, bank, categoryId, type, page, sort],
+    queryKey: ['transactions', month, bank, categoryId, type, debouncedSearch, page, sort],
     queryFn: () =>
       getTransactions({
         month,
         bank: bank || undefined,
         categoryId: categoryId || undefined,
         type: type || undefined,
+        search: debouncedSearch || undefined,
         page,
         size: 20,
         sort,
@@ -146,6 +154,18 @@ export default function TransactionsPage() {
             <option value="EXPENSE">Despesa</option>
             <option value="INTERNAL_TRANSFER">Transferência Interna</option>
           </select>
+        </label>
+
+        <label style={labelStyle}>
+          Busca
+          <input
+            type="text"
+            value={search}
+            placeholder="Descrição ou destinatário..."
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ ...inputStyle, minWidth: 200 }}
+            aria-label="Busca por descrição ou destinatário"
+          />
         </label>
       </div>
 

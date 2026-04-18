@@ -43,6 +43,7 @@ public class TransactionService {
             UUID categoryId,
             BankName bank,
             TransactionType type,
+            String search,
             Pageable pageable) {
 
         OffsetDateTime from = null;
@@ -54,7 +55,7 @@ public class TransactionService {
         }
 
         Specification<Transaction> spec =
-                TransactionSpecifications.withFilters(bank, categoryId, type, from, to);
+                TransactionSpecifications.withFilters(bank, categoryId, type, from, to, search);
 
         return transactionRepository.findAll(spec, pageable).map(TransactionDTO::from);
     }
