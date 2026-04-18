@@ -176,7 +176,6 @@ class StatementUploadServiceTest {
         Transaction savedTx = new Transaction();
         savedTx.setId(UUID.randomUUID());
         when(transactionRepository.save(any(Transaction.class))).thenReturn(savedTx);
-        when(internalTransferDetector.findAutoMatch(any(), any())).thenReturn(Optional.empty());
 
         service.upload(DUMMY_PDF, BankName.NUBANK);
 
@@ -218,6 +217,36 @@ class StatementUploadServiceTest {
         UploadResult result = service.upload(DUMMY_PDF, BankName.NUBANK);
 
         verify(internalTransferRepository).save(any(InternalTransfer.class));
+        assertThat(result.internalTransfers()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("upload counts rule-based internal transfer in internalTransfers result")
+    void upload_countsRuleBasedInternalTransfer_inResult() {
+        String extractedText = "some text";
+        when(pdfExtractor.extractText(DUMMY_PDF)).thenReturn(extractedText);
+
+        RawTransaction raw = new RawTransaction(
+                LocalDateTime.now(),
+                BigDecimal.TEN,
+                "Pedro Henrique",
+                "Transferência",
+                TransactionType.EXPENSE,
+                "raw");
+        when(nubankParser.parse(extractedText)).thenReturn(List.of(raw));
+
+        BankAccount account = existingAccount();
+        when(bankAccountRepository.findByBankName(BankName.NUBANK)).thenReturn(Optional.of(account));
+        when(recipientCategoryRuleRepository.findAll()).thenReturn(List.of());
+        when(internalAccountRuleRepository.findAll()).thenReturn(List.of());
+        when(internalTransferDetector.matchesInternalAccountRule(any(), any())).thenReturn(true);
+
+        Transaction savedTx = new Transaction();
+        savedTx.setId(UUID.randomUUID());
+        when(transactionRepository.save(any(Transaction.class))).thenReturn(savedTx);
+
+        UploadResult result = service.upload(DUMMY_PDF, BankName.NUBANK);
+
         assertThat(result.internalTransfers()).isEqualTo(1);
     }
 

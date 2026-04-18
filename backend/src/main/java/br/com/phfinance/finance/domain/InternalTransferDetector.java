@@ -10,16 +10,21 @@ import org.springframework.stereotype.Component;
 public class InternalTransferDetector {
 
     /**
-     * Rule-based check: returns true if the transaction's recipient contains any
-     * internal_account_rule identifier (case-insensitive substring match).
+     * Rule-based check: returns true if any internal_account_rule identifier appears
+     * (case-insensitive substring) in the transaction's recipient, description, or rawText.
      */
     public boolean matchesInternalAccountRule(Transaction tx, List<InternalAccountRule> rules) {
-        if (tx.getRecipient() == null) {
-            return false;
+        return rules.stream().anyMatch(rule -> matchesAnyField(tx, rule.getIdentifier().toLowerCase()));
+    }
+
+    private boolean matchesAnyField(Transaction tx, String identifierLower) {
+        if (tx.getRecipient() != null && tx.getRecipient().toLowerCase().contains(identifierLower)) {
+            return true;
         }
-        String recipientLower = tx.getRecipient().toLowerCase();
-        return rules.stream()
-            .anyMatch(rule -> recipientLower.contains(rule.getIdentifier().toLowerCase()));
+        if (tx.getDescription() != null && tx.getDescription().toLowerCase().contains(identifierLower)) {
+            return true;
+        }
+        return tx.getRawText() != null && tx.getRawText().toLowerCase().contains(identifierLower);
     }
 
     /**
