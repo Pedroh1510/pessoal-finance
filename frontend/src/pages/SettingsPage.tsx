@@ -15,9 +15,10 @@ import {
   getInternalAccountRules,
   createInternalAccountRule,
   deleteInternalAccountRule,
+  reprocessTransactions,
 } from '../lib/finance'
 
-type Tab = 'categories' | 'recipient-rules' | 'internal-accounts'
+type Tab = 'categories' | 'recipient-rules' | 'internal-accounts' | 'reprocess'
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<Tab>('categories')
@@ -26,6 +27,7 @@ export default function SettingsPage() {
     { key: 'categories', label: 'Categorias' },
     { key: 'recipient-rules', label: 'Regras de Destinatário' },
     { key: 'internal-accounts', label: 'Contas Internas' },
+    { key: 'reprocess' as Tab, label: 'Reprocessar' },
   ]
 
   return (
@@ -63,6 +65,7 @@ export default function SettingsPage() {
       {activeTab === 'categories' && <CategoriesTab />}
       {activeTab === 'recipient-rules' && <RecipientRulesTab />}
       {activeTab === 'internal-accounts' && <InternalAccountsTab />}
+      {activeTab === 'reprocess' && <ReprocessTab />}
     </div>
   )
 }
@@ -357,6 +360,68 @@ function InternalAccountsTab() {
             </li>
           ))}
         </ul>
+      )}
+    </div>
+  )
+}
+
+/* ─── Reprocess Tab ─── */
+
+interface ReprocessResultState {
+  categorized: number
+  typeChanged: number
+}
+
+function ReprocessTab() {
+  const queryClient = useQueryClient()
+  const [result, setResult] = useState<ReprocessResultState | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  const { mutate: run, isPending } = useMutation({
+    mutationFn: reprocessTransactions,
+    onSuccess: (data) => {
+      setError(null)
+      setResult(data)
+      queryClient.invalidateQueries({ queryKey: ['transactions'] })
+    },
+    onError: (err: unknown) => {
+      const message = err instanceof Error ? err.message : 'Erro ao reprocessar transações.'
+      setError(message)
+    },
+  })
+
+  return (
+    <div style={{ maxWidth: 480 }}>
+      <p style={{ color: '#555', fontSize: '0.9rem', marginBottom: '1.25rem' }}>
+        Reaplica as regras de categoria e de transferência interna em todas as transações
+        existentes. Transações sem categoria recebem a categoria conforme as regras de
+        destinatário. Transações de receita ou despesa que se enquadrem nas regras de contas
+        internas são reclassificadas como Transferência Interna.
+      </p>
+
+      <button
+        onClick={() => { setResult(null); setError(null); run() }}
+        disabled={isPending}
+        style={{
+          ...primaryBtnStyle,
+          opacity: isPending ? 0.65 : 1,
+          cursor: isPending ? 'not-allowed' : 'pointer',
+        }}
+      >
+        {isPending ? 'Processando...' : 'Reprocessar transações'}
+      </button>
+
+      {error && (
+        <p role="alert" style={{ marginTop: '1rem', color: '#d61f69', fontSize: '0.9rem' }}>
+          {error}
+        </p>
+      )}
+
+      {result && (
+        <p style={{ marginTop: '1.25rem', fontSize: '0.9rem', color: '#374151' }}>
+          <strong>{result.categorized}</strong> transação(ões) categorizada(s).{' '}
+          <strong>{result.typeChanged}</strong> tipo(s) alterado(s) para Transferência Interna.
+        </p>
       )}
     </div>
   )

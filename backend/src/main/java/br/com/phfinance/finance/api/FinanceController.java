@@ -4,8 +4,10 @@ import br.com.phfinance.finance.application.InternalAccountRuleDTO;
 import br.com.phfinance.finance.application.InternalAccountRuleService;
 import br.com.phfinance.finance.application.RecipientCategoryRuleDTO;
 import br.com.phfinance.finance.application.RecipientRuleService;
+import br.com.phfinance.finance.application.ReprocessResult;
 import br.com.phfinance.finance.application.StatementUploadService;
 import br.com.phfinance.finance.application.TransactionDTO;
+import br.com.phfinance.finance.application.TransactionReprocessService;
 import br.com.phfinance.finance.application.TransactionService;
 import br.com.phfinance.finance.application.UploadResult;
 import br.com.phfinance.finance.domain.BankName;
@@ -42,16 +44,19 @@ public class FinanceController {
     private final TransactionService transactionService;
     private final RecipientRuleService recipientRuleService;
     private final InternalAccountRuleService internalAccountRuleService;
+    private final TransactionReprocessService transactionReprocessService;
 
     public FinanceController(
             StatementUploadService statementUploadService,
             TransactionService transactionService,
             RecipientRuleService recipientRuleService,
-            InternalAccountRuleService internalAccountRuleService) {
+            InternalAccountRuleService internalAccountRuleService,
+            TransactionReprocessService transactionReprocessService) {
         this.statementUploadService = statementUploadService;
         this.transactionService = transactionService;
         this.recipientRuleService = recipientRuleService;
         this.internalAccountRuleService = internalAccountRuleService;
+        this.transactionReprocessService = transactionReprocessService;
     }
 
     private static final long MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
@@ -153,5 +158,10 @@ public class FinanceController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteInternalAccountRule(@PathVariable UUID id) {
         internalAccountRuleService.delete(id);
+    }
+
+    @PostMapping("/reprocess")
+    public ResponseEntity<ReprocessResult> reprocess() {
+        return ResponseEntity.ok(transactionReprocessService.reprocess());
     }
 }
