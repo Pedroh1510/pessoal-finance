@@ -10,10 +10,12 @@ import br.com.phfinance.finance.application.TransactionService;
 import br.com.phfinance.finance.application.UploadResult;
 import br.com.phfinance.finance.domain.BankName;
 import br.com.phfinance.finance.domain.TransactionType;
+import java.util.Arrays;
 import java.util.List;
 import java.time.YearMonth;
 import java.util.UUID;
 import java.io.IOException;
+import java.util.stream.Collectors;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -52,11 +54,34 @@ public class FinanceController {
         this.internalAccountRuleService = internalAccountRuleService;
     }
 
+    private static final long MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
+
     @PostMapping(value = "/uploads", consumes = "multipart/form-data")
     public ResponseEntity<UploadResult> upload(
             @RequestParam("file") MultipartFile file,
             @RequestParam("bankName") String bankName) {
-        BankName bank = BankName.valueOf(bankName.toUpperCase());
+        if (file.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File must not be empty");
+        }
+        if (file.getSize() > MAX_UPLOAD_SIZE_BYTES) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File exceeds maximum allowed size of 10 MB");
+        }
+        String contentType = file.getContentType();
+        if (!"application/pdf".equals(contentType)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only PDF files are accepted");
+        }
+
+        BankName bank;
+        try {
+            bank = BankName.valueOf(bankName.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            String valid = Arrays.stream(BankName.values())
+                    .map(Enum::name)
+                    .collect(Collectors.joining(", "));
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Invalid bank name '" + bankName + "'. Valid values: " + valid);
+        }
+
         byte[] bytes;
         try {
             bytes = file.getBytes();

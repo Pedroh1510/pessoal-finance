@@ -1,7 +1,10 @@
 # Env
 .env
+.env.*
+!.env.example
 frontend/.env
-frontend/.env.local
+frontend/.env.*
+!frontend/.env.example
 
 # Backend
 backend/target/
