@@ -36,7 +36,7 @@ public class PdfExtractor {
         }
         try (PDDocument document = Loader.loadPDF(pdf)) {
             PDFTextStripper stripper = new PDFTextStripper();
-            return stripper.getText(document);
+            return stripper.getText(document).replace("\u0000", " ");
         } catch (IOException e) {
             throw new PdfExtractionException("Failed to extract text from PDF", e);
         }

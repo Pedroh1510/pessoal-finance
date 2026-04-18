@@ -71,6 +71,18 @@ class PdfExtractorTest {
     }
 
     @Test
+    void extractText_neonPdf_doesNotContainNullBytes() throws IOException {
+        assumeTrue(Files.exists(NEON_PDF), "Neon PDF not found, skipping");
+        byte[] pdfBytes = Files.readAllBytes(NEON_PDF);
+
+        String text = pdfExtractor.extractText(pdfBytes);
+
+        // Neon PDFs use 0x00 as a field separator; they must be replaced before
+        // reaching PostgreSQL, which rejects null bytes in text columns.
+        assertThat(text.indexOf('\u0000')).isEqualTo(-1);
+    }
+
+    @Test
     void extractText_nullBytes_throwsException() {
         assertThatThrownBy(() -> pdfExtractor.extractText(null))
                 .isInstanceOf(PdfExtractionException.class)
