@@ -1,6 +1,7 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { ThemeProvider } from '../contexts/ThemeContext'
 import Layout from './Layout'
 
 const queryClient = new QueryClient()
@@ -14,9 +15,11 @@ function renderLayout() {
     },
   ])
   return render(
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </ThemeProvider>
   )
 }
 
@@ -34,5 +37,17 @@ describe('Layout', () => {
   it('renders outlet content', () => {
     renderLayout()
     expect(screen.getByText('content')).toBeInTheDocument()
+  })
+
+  it('renders theme toggle button', () => {
+    renderLayout()
+    expect(screen.getByRole('button', { name: /tema/i })).toBeInTheDocument()
+  })
+
+  it('toggles theme label when clicked', () => {
+    renderLayout()
+    const btn = screen.getByRole('button', { name: /tema/i })
+    fireEvent.click(btn)
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
   })
 })
