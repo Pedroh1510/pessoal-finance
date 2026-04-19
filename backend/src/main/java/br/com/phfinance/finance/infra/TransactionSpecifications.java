@@ -16,14 +16,16 @@ public final class TransactionSpecifications {
             UUID categoryId,
             TransactionType type,
             OffsetDateTime from,
-            OffsetDateTime to) {
+            OffsetDateTime to,
+            String search) {
 
         return Specification
                 .where(hasBankName(bank))
                 .and(hasCategoryId(categoryId))
                 .and(hasType(type))
                 .and(dateFrom(from))
-                .and(dateTo(to));
+                .and(dateTo(to))
+                .and(hasSearch(search));
     }
 
     private static Specification<Transaction> hasBankName(BankName bank) {
@@ -49,5 +51,23 @@ public final class TransactionSpecifications {
     private static Specification<Transaction> dateTo(OffsetDateTime to) {
         if (to == null) return null;
         return (root, query, cb) -> cb.lessThanOrEqualTo(root.get("date"), to);
+    }
+
+    private static Specification<Transaction> hasSearch(String search) {
+        if (search == null || search.isBlank()) return null;
+        String escaped = search.toLowerCase()
+                .replace("\\", "\\\\")
+                .replace("%", "\\%")
+                .replace("_", "\\_");
+        String pattern = "%" + escaped + "%";
+        return (root, query, cb) -> {
+            jakarta.persistence.criteria.Predicate matchRecipient = cb.and(
+                    cb.isNotNull(root.get("recipient")),
+                    cb.like(cb.lower(root.get("recipient")), pattern, '\\'));
+            jakarta.persistence.criteria.Predicate matchDescription = cb.and(
+                    cb.isNotNull(root.get("description")),
+                    cb.like(cb.lower(root.get("description")), pattern, '\\'));
+            return cb.or(matchRecipient, matchDescription);
+        };
     }
 }

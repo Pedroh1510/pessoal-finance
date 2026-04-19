@@ -42,11 +42,17 @@ export interface InternalAccountRuleDTO {
   type: string
 }
 
+export interface ReprocessResult {
+  categorized: number
+  typeChanged: number
+}
+
 export async function getTransactions(params: {
   month?: string
   categoryId?: string
   bank?: BankName
   type?: TransactionType
+  search?: string
   page?: number
   size?: number
   sort?: string
@@ -104,4 +110,9 @@ export async function createInternalAccountRule(
 
 export async function deleteInternalAccountRule(id: string): Promise<void> {
   await api.delete(`/finance/rules/internal-accounts/${id}`)
+}
+
+export async function reprocessTransactions(): Promise<ReprocessResult> {
+  const { data } = await api.post<ReprocessResult>('/finance/reprocess')
+  return data
 }

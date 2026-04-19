@@ -6,6 +6,7 @@ import br.com.phfinance.finance.domain.BankName;
 import br.com.phfinance.finance.domain.TransactionType;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -30,4 +31,8 @@ public interface TransactionRepository
 
     Page<Transaction> findByAccountBankNameAndDateBetween(
         BankName bankName, OffsetDateTime from, OffsetDateTime to, Pageable pageable);
+
+    List<Transaction> findByCategoryIsNull();
+
+    List<Transaction> findByTypeIn(Collection<TransactionType> types);
 }

@@ -13,39 +13,45 @@ interface UploadHistoryEntry {
   uploadedAt: Date
 }
 
+interface UploadFailure {
+  filename: string
+  error: string
+}
+
 export default function UploadsPage() {
-  const [file, setFile] = useState<File | null>(null)
+  const [files, setFiles] = useState<File[]>([])
   const [history, setHistory] = useState<UploadHistoryEntry[]>([])
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [failures, setFailures] = useState<UploadFailure[]>([])
 
   const { register, handleSubmit, reset } = useForm<UploadFormValues>({
     defaultValues: { bank: 'NUBANK' },
   })
 
   const onSubmit = async (values: UploadFormValues) => {
-    if (!file) {
-      setError('Selecione um arquivo PDF.')
-      return
-    }
+    if (files.length === 0) return
 
     setLoading(true)
-    setError(null)
+    setFailures([])
+
+    const newFailures: UploadFailure[] = []
 
     try {
-      const result = await uploadStatement(file, values.bank)
-      setHistory((prev) => [
-        { filename: file.name, bank: values.bank, result, uploadedAt: new Date() },
-        ...prev,
-      ])
-      setFile(null)
-      reset()
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message)
-      } else {
-        setError('Erro ao realizar upload. Tente novamente.')
+      for (const file of files) {
+        try {
+          const result = await uploadStatement(file, values.bank)
+          setHistory((prev) => [
+            { filename: file.name, bank: values.bank, result, uploadedAt: new Date() },
+            ...prev,
+          ])
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : 'Erro ao realizar upload.'
+          newFailures.push({ filename: file.name, error: message })
+        }
       }
+      setFailures(newFailures)
+      setFiles([])
+      reset()
     } finally {
       setLoading(false)
     }
@@ -76,35 +82,42 @@ export default function UploadsPage() {
               <input
                 type="file"
                 accept="application/pdf"
-                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                multiple
+                onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
                 style={{ fontSize: '0.9rem' }}
-                aria-label="Selecionar arquivo PDF"
+                aria-label="Selecionar arquivos PDF"
               />
-              {file && (
+              {files.length > 0 && (
                 <span style={{ fontSize: '0.8rem', color: '#555' }}>
-                  Selecionado: {file.name}
+                  {files.length} arquivo(s) selecionado(s)
                 </span>
               )}
             </label>
 
-            {error && <p style={{ color: '#d61f69', margin: 0 }}>{error}</p>}
+            {failures.length > 0 && (
+              <ul role="alert" style={{ margin: 0, paddingLeft: '1.2rem', color: '#d61f69', fontSize: '0.875rem' }}>
+                {failures.map((f) => (
+                  <li key={f.filename}><strong>{f.filename}</strong>: {f.error}</li>
+                ))}
+              </ul>
+            )}
 
             <button
               type="submit"
-              disabled={loading || !file}
+              disabled={loading || files.length === 0}
               style={{
                 padding: '0.6rem 1.5rem',
                 background: '#1a56db',
                 color: '#fff',
                 border: 'none',
                 borderRadius: '4px',
-                cursor: loading || !file ? 'not-allowed' : 'pointer',
+                cursor: loading || files.length === 0 ? 'not-allowed' : 'pointer',
                 fontSize: '0.9rem',
-                opacity: loading || !file ? 0.65 : 1,
+                opacity: loading || files.length === 0 ? 0.65 : 1,
                 alignSelf: 'flex-start',
               }}
             >
-              {loading ? 'Enviando...' : 'Enviar extrato'}
+              {loading ? 'Enviando...' : 'Enviar extratos'}
             </button>
           </div>
         </form>

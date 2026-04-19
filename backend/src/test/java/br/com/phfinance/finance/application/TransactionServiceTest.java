@@ -90,6 +90,40 @@ class TransactionServiceTest {
         org.assertj.core.api.Assertions.assertThat(tx.getCategory()).isEqualTo(category);
     }
 
+    @Test
+    @DisplayName("findAll calls repository with null search when search is blank")
+    void findAll_nullSearch_callsRepository() {
+        org.springframework.data.domain.Pageable pageable =
+                org.springframework.data.domain.PageRequest.of(0, 20);
+        when(transactionRepository.findAll(
+                org.mockito.ArgumentMatchers.<org.springframework.data.jpa.domain.Specification<Transaction>>any(),
+                org.mockito.ArgumentMatchers.eq(pageable)))
+            .thenReturn(org.springframework.data.domain.Page.empty());
+
+        transactionService.findAll(null, null, null, null, null, pageable);
+
+        verify(transactionRepository).findAll(
+                org.mockito.ArgumentMatchers.<org.springframework.data.jpa.domain.Specification<Transaction>>any(),
+                org.mockito.ArgumentMatchers.eq(pageable));
+    }
+
+    @Test
+    @DisplayName("findAll calls repository with non-null search term")
+    void findAll_withSearch_callsRepository() {
+        org.springframework.data.domain.Pageable pageable =
+                org.springframework.data.domain.PageRequest.of(0, 20);
+        when(transactionRepository.findAll(
+                org.mockito.ArgumentMatchers.<org.springframework.data.jpa.domain.Specification<Transaction>>any(),
+                org.mockito.ArgumentMatchers.eq(pageable)))
+            .thenReturn(org.springframework.data.domain.Page.empty());
+
+        transactionService.findAll(null, null, null, null, "mercado", pageable);
+
+        verify(transactionRepository).findAll(
+                org.mockito.ArgumentMatchers.<org.springframework.data.jpa.domain.Specification<Transaction>>any(),
+                org.mockito.ArgumentMatchers.eq(pageable));
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     private Transaction buildTransaction(UUID id) {
