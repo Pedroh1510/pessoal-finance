@@ -57,10 +57,10 @@ const containerStyle: React.CSSProperties = {
   display: 'inline-flex',
   alignItems: 'center',
   gap: '0.25rem',
-  border: '1px solid #d1d5db',
+  border: '1px solid var(--color-border-input)',
   borderRadius: '4px',
   padding: '0.25rem 0.4rem',
-  background: '#fff',
+  background: 'var(--color-surface)',
   height: '32px',
   boxSizing: 'border-box',
 }
@@ -72,14 +72,14 @@ const arrowStyle: React.CSSProperties = {
   fontSize: '1.1rem',
   lineHeight: 1,
   padding: '0 0.2rem',
-  color: '#374151',
+  color: 'var(--color-text)',
   display: 'flex',
   alignItems: 'center',
 }
 
 const labelStyle: React.CSSProperties = {
   fontSize: '0.875rem',
-  color: '#374151',
+  color: 'var(--color-text)',
   minWidth: '130px',
   textAlign: 'center',
   userSelect: 'none',

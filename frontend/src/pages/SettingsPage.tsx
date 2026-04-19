@@ -36,7 +36,7 @@ export default function SettingsPage() {
 
       <ul
         role="tablist"
-        style={{ display: 'flex', gap: '0', listStyle: 'none', padding: 0, margin: '0 0 1.5rem', borderBottom: '2px solid #e5e7eb' }}
+        style={{ display: 'flex', gap: '0', listStyle: 'none', padding: 0, margin: '0 0 1.5rem', borderBottom: '2px solid var(--color-border)' }}
       >
         {tabs.map((t) => (
           <li key={t.key} role="presentation">
@@ -47,12 +47,12 @@ export default function SettingsPage() {
               style={{
                 padding: '0.6rem 1.25rem',
                 border: 'none',
-                borderBottom: activeTab === t.key ? '2px solid #1a56db' : '2px solid transparent',
+                borderBottom: activeTab === t.key ? '2px solid var(--color-accent)' : '2px solid transparent',
                 marginBottom: '-2px',
                 background: 'transparent',
                 cursor: 'pointer',
                 fontWeight: activeTab === t.key ? 600 : 400,
-                color: activeTab === t.key ? '#1a56db' : '#555',
+                color: activeTab === t.key ? 'var(--color-accent)' : 'var(--color-text-muted)',
                 fontSize: '0.9rem',
               }}
             >
@@ -145,7 +145,7 @@ function CategoriesTab() {
         <input
           type="color"
           {...register('color')}
-          style={{ width: 40, height: 36, padding: '2px', border: '1px solid #d1d5db', borderRadius: 4, cursor: 'pointer' }}
+          style={{ width: 40, height: 36, padding: '2px', border: '1px solid var(--color-border-input)', borderRadius: 4, cursor: 'pointer' }}
           aria-label="Cor da categoria"
         />
         <button type="submit" disabled={creating || updating} style={primaryBtnStyle}>
@@ -174,7 +174,7 @@ function CategoriesTab() {
             />
             <span style={{ flex: 1 }}>{cat.name}</span>
             {cat.isSystem && (
-              <span style={{ fontSize: '0.75rem', color: '#888', marginRight: '0.5rem' }}>
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginRight: '0.5rem' }}>
                 sistema
               </span>
             )}
@@ -187,7 +187,7 @@ function CategoriesTab() {
             </button>
             <button
               onClick={() => remove(cat.id)}
-              style={{ ...secondaryBtnStyle, color: '#d61f69' }}
+              style={{ ...secondaryBtnStyle, color: 'var(--color-danger)' }}
               disabled={cat.isSystem}
             >
               Excluir
@@ -263,7 +263,7 @@ function RecipientRulesTab() {
       </form>
 
       {rules.length === 0 ? (
-        <p style={{ color: '#888' }}>Nenhuma regra cadastrada.</p>
+        <p style={{ color: 'var(--color-text-muted)' }}>Nenhuma regra cadastrada.</p>
       ) : (
         <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
           {rules.map((rule) => (
@@ -273,7 +273,7 @@ function RecipientRulesTab() {
               </span>
               <button
                 onClick={() => remove(rule.id)}
-                style={{ ...secondaryBtnStyle, color: '#d61f69' }}
+                style={{ ...secondaryBtnStyle, color: 'var(--color-danger)' }}
               >
                 Excluir
               </button>
@@ -342,18 +342,18 @@ function InternalAccountsTab() {
       </form>
 
       {rules.length === 0 ? (
-        <p style={{ color: '#888' }}>Nenhuma conta interna cadastrada.</p>
+        <p style={{ color: 'var(--color-text-muted)' }}>Nenhuma conta interna cadastrada.</p>
       ) : (
         <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
           {rules.map((rule) => (
             <li key={rule.id} style={listItemStyle}>
               <span style={{ flex: 1 }}>
                 <strong>{rule.identifier}</strong>{' '}
-                <span style={{ color: '#888', fontSize: '0.8rem' }}>({rule.type})</span>
+                <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>({rule.type})</span>
               </span>
               <button
                 onClick={() => remove(rule.id)}
-                style={{ ...secondaryBtnStyle, color: '#d61f69' }}
+                style={{ ...secondaryBtnStyle, color: 'var(--color-danger)' }}
               >
                 Excluir
               </button>
@@ -392,7 +392,7 @@ function ReprocessTab() {
 
   return (
     <div style={{ maxWidth: 480 }}>
-      <p style={{ color: '#555', fontSize: '0.9rem', marginBottom: '1.25rem' }}>
+      <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginBottom: '1.25rem' }}>
         Reaplica as regras de categoria e de transferência interna em todas as transações
         existentes. Transações sem categoria recebem a categoria conforme as regras de
         destinatário. Transações de receita ou despesa que se enquadrem nas regras de contas
@@ -412,13 +412,13 @@ function ReprocessTab() {
       </button>
 
       {error && (
-        <p role="alert" style={{ marginTop: '1rem', color: '#d61f69', fontSize: '0.9rem' }}>
+        <p role="alert" style={{ marginTop: '1rem', color: 'var(--color-danger)', fontSize: '0.9rem' }}>
           {error}
         </p>
       )}
 
       {result && (
-        <p style={{ marginTop: '1.25rem', fontSize: '0.9rem', color: '#374151' }}>
+        <p style={{ marginTop: '1.25rem', fontSize: '0.9rem', color: 'var(--color-text)' }}>
           <strong>{result.categorized}</strong> transação(ões) categorizada(s).{' '}
           <strong>{result.typeChanged}</strong> tipo(s) alterado(s) para Transferência Interna.
         </p>
@@ -439,7 +439,7 @@ const formRowStyle: React.CSSProperties = {
 
 const inputStyle: React.CSSProperties = {
   padding: '0.45rem 0.6rem',
-  border: '1px solid #d1d5db',
+  border: '1px solid var(--color-border-input)',
   borderRadius: '4px',
   fontSize: '0.9rem',
   minWidth: 160,
@@ -447,7 +447,7 @@ const inputStyle: React.CSSProperties = {
 
 const primaryBtnStyle: React.CSSProperties = {
   padding: '0.45rem 1rem',
-  background: '#1a56db',
+  background: 'var(--color-accent)',
   color: '#fff',
   border: 'none',
   borderRadius: '4px',
@@ -457,9 +457,9 @@ const primaryBtnStyle: React.CSSProperties = {
 
 const secondaryBtnStyle: React.CSSProperties = {
   padding: '0.35rem 0.75rem',
-  background: '#fff',
-  color: '#374151',
-  border: '1px solid #d1d5db',
+  background: 'var(--color-surface)',
+  color: 'var(--color-text)',
+  border: '1px solid var(--color-border-input)',
   borderRadius: '4px',
   cursor: 'pointer',
   fontSize: '0.8rem',
@@ -470,5 +470,5 @@ const listItemStyle: React.CSSProperties = {
   alignItems: 'center',
   gap: '0.5rem',
   padding: '0.6rem 0',
-  borderBottom: '1px solid #f3f4f6',
+  borderBottom: '1px solid var(--color-border-subtle)',
 }

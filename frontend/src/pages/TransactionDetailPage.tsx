@@ -43,7 +43,7 @@ export default function TransactionDetailPage() {
 
   if (isLoading) return <p style={{ padding: '2rem' }}>Carregando...</p>
   if (isError || !transaction)
-    return <p style={{ color: '#d61f69', padding: '2rem' }}>Erro ao carregar transação.</p>
+    return <p style={{ color: 'var(--color-danger)', padding: '2rem' }}>Erro ao carregar transação.</p>
 
   const currentCategoryId = selectedCategory || transaction.categoryId || ''
 
@@ -70,10 +70,10 @@ export default function TransactionDetailPage() {
               fontWeight: 700,
               color:
                 transaction.type === 'INCOME'
-                  ? '#057a55'
+                  ? 'var(--color-success)'
                   : transaction.type === 'EXPENSE'
-                    ? '#d61f69'
-                    : '#333',
+                    ? 'var(--color-danger)'
+                    : 'var(--color-text)',
             }}
           >
             {transaction.type === 'EXPENSE' ? '-' : ''}
@@ -105,7 +105,7 @@ export default function TransactionDetailPage() {
             onChange={(e) => setSelectedCategory(e.target.value)}
             style={{
               padding: '0.45rem 0.6rem',
-              border: '1px solid #d1d5db',
+              border: '1px solid var(--color-border-input)',
               borderRadius: '4px',
               fontSize: '0.9rem',
               minWidth: 180,
@@ -125,8 +125,8 @@ export default function TransactionDetailPage() {
             disabled={isPending || !selectedCategory}
             style={{
               ...btnStyle,
-              background: '#1a56db',
-              color: '#fff',
+              background: 'var(--color-accent)',
+              color: 'var(--color-surface)',
               border: 'none',
               opacity: isPending || !selectedCategory ? 0.6 : 1,
             }}
@@ -134,7 +134,7 @@ export default function TransactionDetailPage() {
             {isPending ? 'Salvando...' : 'Salvar categoria'}
           </button>
 
-          {saved && <span style={{ color: '#057a55', fontSize: '0.875rem' }}>Salvo!</span>}
+          {saved && <span style={{ color: 'var(--color-success)', fontSize: '0.875rem' }}>Salvo!</span>}
         </div>
       </div>
     </div>
@@ -142,14 +142,14 @@ export default function TransactionDetailPage() {
 }
 
 const cardStyle: React.CSSProperties = {
-  background: '#fff',
-  border: '1px solid #e5e7eb',
+  background: 'var(--color-surface)',
+  border: '1px solid var(--color-border)',
   borderRadius: '8px',
   padding: '1.25rem',
 }
 
 const dtStyle: React.CSSProperties = {
-  color: '#6b7280',
+  color: 'var(--color-text-muted)',
   fontSize: '0.875rem',
   fontWeight: 500,
 }
@@ -157,14 +157,14 @@ const dtStyle: React.CSSProperties = {
 const ddStyle: React.CSSProperties = {
   margin: 0,
   fontSize: '0.9rem',
-  color: '#111827',
+  color: 'var(--color-text)',
 }
 
 const btnStyle: React.CSSProperties = {
   padding: '0.45rem 1rem',
-  border: '1px solid #d1d5db',
+  border: '1px solid var(--color-border-input)',
   borderRadius: '4px',
   cursor: 'pointer',
   fontSize: '0.875rem',
-  background: '#fff',
+  background: 'var(--color-surface)',
 }

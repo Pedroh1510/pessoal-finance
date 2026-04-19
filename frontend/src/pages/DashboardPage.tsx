@@ -96,20 +96,20 @@ export default function DashboardPage() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
         <div style={cardStyle}>
-          <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: '0.25rem' }}>Receita</div>
-          <div style={{ fontSize: '1.4rem', fontWeight: 700, color: '#057a55' }}>{BRL(income)}</div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '0.25rem' }}>Receita</div>
+          <div style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--color-success)' }}>{BRL(income)}</div>
         </div>
         <div style={cardStyle}>
-          <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: '0.25rem' }}>Despesa</div>
-          <div style={{ fontSize: '1.4rem', fontWeight: 700, color: '#d61f69' }}>{BRL(expense)}</div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '0.25rem' }}>Despesa</div>
+          <div style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--color-danger)' }}>{BRL(expense)}</div>
         </div>
         <div style={cardStyle}>
-          <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: '0.25rem' }}>Saldo do mês</div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '0.25rem' }}>Saldo do mês</div>
           <div
             style={{
               fontSize: '1.4rem',
               fontWeight: 700,
-              color: balance >= 0 ? '#057a55' : '#d61f69',
+              color: balance >= 0 ? 'var(--color-success)' : 'var(--color-danger)',
             }}
           >
             {BRL(balance)}
@@ -121,7 +121,7 @@ export default function DashboardPage() {
         <div style={cardStyle}>
           <h3 style={{ marginTop: 0, marginBottom: '1rem' }}>Top 5 Categorias (Despesas)</h3>
           {topCategories.length === 0 ? (
-            <p style={{ color: '#888' }}>Nenhum dado disponível</p>
+            <p style={{ color: 'var(--color-text-muted)' }}>Nenhum dado disponível</p>
           ) : (
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
@@ -148,7 +148,7 @@ export default function DashboardPage() {
 
         <div style={cardStyle}>
           <h3 style={{ marginTop: 0, marginBottom: '0.5rem' }}>Patrimônio</h3>
-          <p style={{ color: '#888', fontStyle: 'italic' }}>Em breve</p>
+          <p style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>Em breve</p>
         </div>
       </div>
 
@@ -161,8 +161,8 @@ export default function DashboardPage() {
             <YAxis tickFormatter={(v) => `R$ ${(v / 1000).toFixed(0)}k`} />
             <Tooltip formatter={(value: number) => BRL(value)} />
             <Legend />
-            <Bar dataKey="Receita" fill="#057a55" />
-            <Bar dataKey="Despesa" fill="#d61f69" />
+            <Bar dataKey="Receita" fill="var(--color-success)" />
+            <Bar dataKey="Despesa" fill="var(--color-danger)" />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -171,8 +171,8 @@ export default function DashboardPage() {
 }
 
 const cardStyle: React.CSSProperties = {
-  background: '#fff',
-  border: '1px solid #e5e7eb',
+  background: 'var(--color-surface)',
+  border: '1px solid var(--color-border)',
   borderRadius: '8px',
   padding: '1.25rem',
 }

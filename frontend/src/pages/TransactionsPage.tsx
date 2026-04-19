@@ -170,7 +170,7 @@ export default function TransactionsPage() {
       </div>
 
       {isLoading && <p>Carregando...</p>}
-      {isError && <p style={{ color: '#d61f69' }}>Erro ao carregar transações.</p>}
+      {isError && <p style={{ color: 'var(--color-danger)' }}>Erro ao carregar transações.</p>}
 
       {data && (
         <>
@@ -197,7 +197,7 @@ export default function TransactionsPage() {
               <tbody>
                 {data.content.length === 0 ? (
                   <tr>
-                    <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>
+                    <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-muted)' }}>
                       Nenhuma transação encontrada
                     </td>
                   </tr>
@@ -208,7 +208,7 @@ export default function TransactionsPage() {
                       onClick={() => navigate(`/transactions/${t.transactionId}`)}
                       style={{ cursor: 'pointer' }}
                       onMouseEnter={(e) =>
-                        ((e.currentTarget as HTMLTableRowElement).style.background = '#f9fafb')
+                        ((e.currentTarget as HTMLTableRowElement).style.background = 'var(--color-bg)')
                       }
                       onMouseLeave={(e) =>
                         ((e.currentTarget as HTMLTableRowElement).style.background = '')
@@ -220,10 +220,10 @@ export default function TransactionsPage() {
                           ...tdStyle,
                           color:
                             t.type === 'INCOME'
-                              ? '#057a55'
+                              ? 'var(--color-success)'
                               : t.type === 'EXPENSE'
-                                ? '#d61f69'
-                                : '#333',
+                                ? 'var(--color-danger)'
+                                : 'var(--color-text)',
                           fontWeight: 600,
                         }}
                       >
@@ -249,7 +249,7 @@ export default function TransactionsPage() {
               marginTop: '1rem',
             }}
           >
-            <span style={{ color: '#666', fontSize: '0.875rem' }}>
+            <span style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
               {data.totalElements} transações · página {data.number + 1} de{' '}
               {data.totalPages || 1}
             </span>
@@ -281,14 +281,16 @@ const labelStyle: React.CSSProperties = {
   flexDirection: 'column',
   gap: '0.25rem',
   fontSize: '0.8rem',
-  color: '#555',
+  color: 'var(--color-text-muted)',
 }
 
 const inputStyle: React.CSSProperties = {
   padding: '0.4rem 0.5rem',
-  border: '1px solid #d1d5db',
+  border: '1px solid var(--color-border-input)',
   borderRadius: '4px',
   fontSize: '0.9rem',
+  background: 'var(--color-surface)',
+  color: 'var(--color-text)',
 }
 
 const tableStyle: React.CSSProperties = {
@@ -300,22 +302,23 @@ const tableStyle: React.CSSProperties = {
 const thStyle: React.CSSProperties = {
   textAlign: 'left',
   padding: '0.6rem 0.75rem',
-  borderBottom: '2px solid #e5e7eb',
-  color: '#374151',
+  borderBottom: '2px solid var(--color-border)',
+  color: 'var(--color-text)',
   fontWeight: 600,
   whiteSpace: 'nowrap',
 }
 
 const tdStyle: React.CSSProperties = {
   padding: '0.6rem 0.75rem',
-  borderBottom: '1px solid #f3f4f6',
+  borderBottom: '1px solid var(--color-border-subtle)',
 }
 
 const btnStyle: React.CSSProperties = {
   padding: '0.35rem 0.75rem',
-  border: '1px solid #d1d5db',
+  border: '1px solid var(--color-border-input)',
   borderRadius: '4px',
   cursor: 'pointer',
   fontSize: '0.85rem',
-  background: '#fff',
+  background: 'var(--color-surface)',
+  color: 'var(--color-text)',
 }
