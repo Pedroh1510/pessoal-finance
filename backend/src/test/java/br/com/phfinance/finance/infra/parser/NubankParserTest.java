@@ -85,6 +85,7 @@ class NubankParserTest {
         assertThat(tx.amount()).isEqualByComparingTo(new BigDecimal("750.00"));
         assertThat(tx.type()).isEqualTo(TransactionType.EXPENSE);
         assertThat(tx.date().toLocalDate()).isEqualTo(LocalDate.of(2026, 1, 1));
+        assertThat(tx.recipient()).isEqualTo("Aplicação RDB");
     }
 
     // --- Expense transaction (Pix sent) ---

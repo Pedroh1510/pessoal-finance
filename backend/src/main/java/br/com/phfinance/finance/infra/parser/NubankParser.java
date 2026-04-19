@@ -216,6 +216,10 @@ public class NubankParser implements BankStatementParser {
         if (rest.endsWith(" -")) {
             rest = rest.substring(0, rest.length() - 2).trim();
         }
+        // If rest is just a monetary amount, the keyword itself is the recipient
+        if (AMOUNT_PATTERN.matcher(rest).matches()) {
+            return keyword.trim();
+        }
         return rest;
     }
 
