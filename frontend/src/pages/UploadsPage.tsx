@@ -107,7 +107,7 @@ export default function UploadsPage() {
               disabled={loading || files.length === 0}
               style={{
                 padding: '0.6rem 1.5rem',
-                background: '#1a56db',
+                background: 'var(--color-accent)',
                 color: '#fff',
                 border: 'none',
                 borderRadius: '4px',
