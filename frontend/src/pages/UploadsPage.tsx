@@ -88,14 +88,14 @@ export default function UploadsPage() {
                 aria-label="Selecionar arquivos PDF"
               />
               {files.length > 0 && (
-                <span style={{ fontSize: '0.8rem', color: '#555' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
                   {files.length} arquivo(s) selecionado(s)
                 </span>
               )}
             </label>
 
             {failures.length > 0 && (
-              <ul role="alert" style={{ margin: 0, paddingLeft: '1.2rem', color: '#d61f69', fontSize: '0.875rem' }}>
+              <ul role="alert" style={{ margin: 0, paddingLeft: '1.2rem', color: 'var(--color-danger)', fontSize: '0.875rem' }}>
                 {failures.map((f) => (
                   <li key={f.filename}><strong>{f.filename}</strong>: {f.error}</li>
                 ))}
@@ -131,11 +131,11 @@ export default function UploadsPage() {
               <li key={i} style={{ ...cardStyle, padding: '1rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                   <strong style={{ fontSize: '0.9rem' }}>{entry.filename}</strong>
-                  <span style={{ fontSize: '0.8rem', color: '#888' }}>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
                     {entry.uploadedAt.toLocaleString('pt-BR')}
                   </span>
                 </div>
-                <div style={{ fontSize: '0.85rem', color: '#555' }}>
+                <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
                   Banco: <strong>{entry.bank}</strong>
                 </div>
                 <div
@@ -147,13 +147,13 @@ export default function UploadsPage() {
                   }}
                 >
                   <span>
-                    <strong style={{ color: '#1a56db' }}>{entry.result.total}</strong> transações importadas
+                    <strong style={{ color: 'var(--color-accent)' }}>{entry.result.total}</strong> transações importadas
                   </span>
                   <span>
-                    <strong style={{ color: '#5850ec' }}>{entry.result.internalTransfers}</strong> transferências internas
+                    <strong style={{ color: 'var(--color-purple)' }}>{entry.result.internalTransfers}</strong> transferências internas
                   </span>
                   <span>
-                    <strong style={{ color: '#e3a008' }}>{entry.result.uncategorized}</strong> sem categoria
+                    <strong style={{ color: 'var(--color-warning)' }}>{entry.result.uncategorized}</strong> sem categoria
                   </span>
                 </div>
               </li>
@@ -166,8 +166,8 @@ export default function UploadsPage() {
 }
 
 const cardStyle: React.CSSProperties = {
-  background: '#fff',
-  border: '1px solid #e5e7eb',
+  background: 'var(--color-surface)',
+  border: '1px solid var(--color-border)',
   borderRadius: '8px',
   padding: '1.5rem',
 }
@@ -177,13 +177,15 @@ const labelStyle: React.CSSProperties = {
   flexDirection: 'column',
   gap: '0.3rem',
   fontSize: '0.85rem',
-  color: '#555',
+  color: 'var(--color-text-muted)',
   fontWeight: 500,
 }
 
 const inputStyle: React.CSSProperties = {
   padding: '0.45rem 0.6rem',
-  border: '1px solid #d1d5db',
+  border: '1px solid var(--color-border-input)',
   borderRadius: '4px',
   fontSize: '0.9rem',
+  background: 'var(--color-surface)',
+  color: 'var(--color-text)',
 }
