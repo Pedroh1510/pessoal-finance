@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
@@ -8,6 +8,7 @@ import {
   getInflationComparison,
   getInflationItems,
   uploadInflation,
+  type InflationUploadResult,
   type MarketItemDTO,
 } from '../lib/inflation'
 
@@ -39,7 +40,8 @@ const inputStyle: React.CSSProperties = {
 export default function InflationPage() {
   const queryClient = useQueryClient()
 
-  const [file, setFile] = useState<File | null>(null)
+  const [files, setFiles] = useState<File[]>([])
+  const inputRef = useRef<HTMLInputElement>(null)
   const [uploadMessage, setUploadMessage] = useState<string | null>(null)
   const [isError, setIsError] = useState(false)
 
@@ -51,7 +53,18 @@ export default function InflationPage() {
   const canShowChart = !!ncmFilter && !!fromPeriod && !!toPeriod
 
   const uploadMutation = useMutation({
-    mutationFn: () => uploadInflation(file!),
+    mutationFn: async (filesToUpload: File[]) => {
+      let total: InflationUploadResult = { purchasesCreated: 0, purchasesSkipped: 0, itemsImported: 0 }
+      for (const f of filesToUpload) {
+        const result = await uploadInflation(f)
+        total = {
+          purchasesCreated: total.purchasesCreated + result.purchasesCreated,
+          purchasesSkipped: total.purchasesSkipped + result.purchasesSkipped,
+          itemsImported: total.itemsImported + result.itemsImported,
+        }
+      }
+      return total
+    },
     onSuccess: (result) => {
       const skippedMsg = result.purchasesSkipped > 0
         ? ` (${result.purchasesSkipped} já existia${result.purchasesSkipped > 1 ? 'm' : ''})`
@@ -60,7 +73,8 @@ export default function InflationPage() {
         `${result.purchasesCreated} nota${result.purchasesCreated !== 1 ? 's' : ''} fiscal importada${result.purchasesCreated !== 1 ? 's' : ''}${skippedMsg}, ${result.itemsImported} itens.`
       )
       setIsError(false)
-      setFile(null)
+      setFiles([])
+      if (inputRef.current) inputRef.current.value = ''
       queryClient.invalidateQueries({ queryKey: ['inflation-items'] })
     },
     onError: () => {
@@ -87,9 +101,9 @@ export default function InflationPage() {
 
   const handleUpload = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!file) return
+    if (files.length === 0) return
     setUploadMessage(null)
-    uploadMutation.mutate()
+    uploadMutation.mutate(files)
   }
 
   return (
@@ -107,11 +121,18 @@ export default function InflationPage() {
             <label style={labelStyle}>
               Arquivo XLS / XLSX
               <input
+                ref={inputRef}
                 type="file"
+                multiple
                 accept=".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
                 aria-label="Arquivo XLS / XLSX"
               />
+              {files.length > 0 && (
+                <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                  {files.length} arquivo{files.length !== 1 ? 's' : ''} selecionado{files.length !== 1 ? 's' : ''}
+                </p>
+              )}
             </label>
 
             {uploadMessage && (
@@ -129,20 +150,24 @@ export default function InflationPage() {
 
             <button
               type="submit"
-              disabled={!file || uploadMutation.isPending}
+              disabled={files.length === 0 || uploadMutation.isPending}
               style={{
                 padding: '0.6rem 1.5rem',
                 background: 'var(--color-accent)',
                 color: '#fff',
                 border: 'none',
                 borderRadius: '4px',
-                cursor: !file || uploadMutation.isPending ? 'not-allowed' : 'pointer',
+                cursor: files.length === 0 || uploadMutation.isPending ? 'not-allowed' : 'pointer',
                 fontSize: '0.9rem',
-                opacity: !file || uploadMutation.isPending ? 0.65 : 1,
+                opacity: files.length === 0 || uploadMutation.isPending ? 0.65 : 1,
                 alignSelf: 'flex-start',
               }}
             >
-              {uploadMutation.isPending ? 'Importando...' : 'Importar planilha'}
+              {uploadMutation.isPending
+                ? 'Importando...'
+                : files.length > 1
+                  ? `Importar ${files.length} planilhas`
+                  : 'Importar planilha'}
             </button>
           </div>
         </form>
