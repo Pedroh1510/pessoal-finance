@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, type CSSProperties, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
@@ -12,14 +12,14 @@ import {
   type MarketItemDTO,
 } from '../lib/inflation'
 
-const cardStyle: React.CSSProperties = {
+const cardStyle: CSSProperties = {
   background: 'var(--color-surface)',
   border: '1px solid var(--color-border)',
   borderRadius: '8px',
   padding: '1.5rem',
 }
 
-const labelStyle: React.CSSProperties = {
+const labelStyle: CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
   gap: '0.3rem',
@@ -28,7 +28,7 @@ const labelStyle: React.CSSProperties = {
   fontWeight: 500,
 }
 
-const inputStyle: React.CSSProperties = {
+const inputStyle: CSSProperties = {
   padding: '0.45rem 0.6rem',
   border: '1px solid var(--color-border-input)',
   borderRadius: '4px',
@@ -44,6 +44,7 @@ export default function InflationPage() {
   const inputRef = useRef<HTMLInputElement>(null)
   const [uploadMessage, setUploadMessage] = useState<string | null>(null)
   const [isError, setIsError] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null)
 
   const [ncmFilter, setNcmFilter] = useState('')
   const [periodFilter, setPeriodFilter] = useState('')
@@ -55,8 +56,9 @@ export default function InflationPage() {
   const uploadMutation = useMutation({
     mutationFn: async (filesToUpload: File[]) => {
       let total: InflationUploadResult = { purchasesCreated: 0, purchasesSkipped: 0, itemsImported: 0 }
-      for (const f of filesToUpload) {
-        const result = await uploadInflation(f)
+      for (let i = 0; i < filesToUpload.length; i++) {
+        setUploadProgress({ current: i + 1, total: filesToUpload.length })
+        const result = await uploadInflation(filesToUpload[i])
         total = {
           purchasesCreated: total.purchasesCreated + result.purchasesCreated,
           purchasesSkipped: total.purchasesSkipped + result.purchasesSkipped,
@@ -73,6 +75,7 @@ export default function InflationPage() {
         `${result.purchasesCreated} nota${result.purchasesCreated !== 1 ? 's' : ''} fiscal importada${result.purchasesCreated !== 1 ? 's' : ''}${skippedMsg}, ${result.itemsImported} itens.`
       )
       setIsError(false)
+      setUploadProgress(null)
       setFiles([])
       if (inputRef.current) inputRef.current.value = ''
       queryClient.invalidateQueries({ queryKey: ['inflation-items'] })
@@ -80,6 +83,7 @@ export default function InflationPage() {
     onError: () => {
       setUploadMessage('Erro ao importar planilha.')
       setIsError(true)
+      setUploadProgress(null)
     },
   })
 
@@ -99,7 +103,7 @@ export default function InflationPage() {
 
   const items: MarketItemDTO[] = itemsQuery.data ?? []
 
-  const handleUpload = (e: React.FormEvent) => {
+  const handleUpload = (e: FormEvent) => {
     e.preventDefault()
     if (files.length === 0) return
     setUploadMessage(null)
@@ -169,6 +173,12 @@ export default function InflationPage() {
                   ? `Importar ${files.length} planilhas`
                   : 'Importar planilha'}
             </button>
+
+            {uploadMutation.isPending && uploadProgress && uploadProgress.total > 1 && (
+              <p role="status" aria-live="polite" aria-atomic="true" style={{ margin: 0, fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
+                Importando {uploadProgress.current} de {uploadProgress.total}…
+              </p>
+            )}
           </div>
         </form>
       </div>

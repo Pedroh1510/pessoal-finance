@@ -1,5 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { type ReactNode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import InflationPage from './InflationPage'
 import * as inflation from '../lib/inflation'
@@ -18,7 +19,7 @@ vi.mock('../lib/inflation', () => ({
 
 function createWrapper() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  return ({ children }: { children: React.ReactNode }) => (
+  return ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={qc}>{children}</QueryClientProvider>
   )
 }
@@ -116,6 +117,28 @@ describe('InflationPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /importar/i }))
     await waitFor(() =>
       expect(screen.getByText(/3 notas.*1 já existia.*8 itens/i)).toBeInTheDocument()
+    )
+  })
+
+  it('shows upload progress while importing multiple files', async () => {
+    let resolveFirst!: (v: unknown) => void
+    vi.mocked(inflation.uploadInflation)
+      .mockImplementationOnce(
+        () => new Promise((res) => { resolveFirst = res }),
+      )
+      .mockResolvedValue({ purchasesCreated: 1, purchasesSkipped: 0, itemsImported: 2 })
+
+    render(<InflationPage />, { wrapper: createWrapper() })
+    const fileA = new File(['a'], 'jan.xls', { type: 'application/vnd.ms-excel' })
+    const fileB = new File(['b'], 'fev.xls', { type: 'application/vnd.ms-excel' })
+    fireEvent.change(screen.getByLabelText(/arquivo/i), { target: { files: [fileA, fileB] } })
+    fireEvent.click(screen.getByRole('button', { name: /importar/i }))
+
+    expect(await screen.findByText(/importando 1 de 2/i)).toBeInTheDocument()
+
+    resolveFirst({ purchasesCreated: 1, purchasesSkipped: 0, itemsImported: 2 })
+    await waitFor(() =>
+      expect(screen.queryByText(/importando 1 de 2/i)).not.toBeInTheDocument(),
     )
   })
 })
