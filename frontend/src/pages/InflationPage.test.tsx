@@ -85,4 +85,37 @@ describe('InflationPage', () => {
     expect(screen.queryByLabelText(/loja/i)).not.toBeInTheDocument()
     expect(screen.queryByLabelText(/data da compra/i)).not.toBeInTheDocument()
   })
+
+  it('shows selected file count when multiple files are chosen', () => {
+    render(<InflationPage />, { wrapper: createWrapper() })
+    const fileA = new File(['a'], 'jan.xls', { type: 'application/vnd.ms-excel' })
+    const fileB = new File(['b'], 'fev.xls', { type: 'application/vnd.ms-excel' })
+    fireEvent.change(screen.getByLabelText(/arquivo/i), { target: { files: [fileA, fileB] } })
+    expect(screen.getByText(/2 arquivos selecionados/i)).toBeInTheDocument()
+  })
+
+  it('calls uploadInflation once per file when multiple files are selected', async () => {
+    render(<InflationPage />, { wrapper: createWrapper() })
+    const fileA = new File(['a'], 'jan.xls', { type: 'application/vnd.ms-excel' })
+    const fileB = new File(['b'], 'fev.xls', { type: 'application/vnd.ms-excel' })
+    fireEvent.change(screen.getByLabelText(/arquivo/i), { target: { files: [fileA, fileB] } })
+    fireEvent.click(screen.getByRole('button', { name: /importar/i }))
+    await waitFor(() => expect(inflation.uploadInflation).toHaveBeenCalledTimes(2))
+    expect(inflation.uploadInflation).toHaveBeenCalledWith(fileA)
+    expect(inflation.uploadInflation).toHaveBeenCalledWith(fileB)
+  })
+
+  it('shows aggregated result after uploading multiple files', async () => {
+    vi.mocked(inflation.uploadInflation)
+      .mockResolvedValueOnce({ purchasesCreated: 2, purchasesSkipped: 0, itemsImported: 5 })
+      .mockResolvedValueOnce({ purchasesCreated: 1, purchasesSkipped: 1, itemsImported: 3 })
+    render(<InflationPage />, { wrapper: createWrapper() })
+    const fileA = new File(['a'], 'jan.xls', { type: 'application/vnd.ms-excel' })
+    const fileB = new File(['b'], 'fev.xls', { type: 'application/vnd.ms-excel' })
+    fireEvent.change(screen.getByLabelText(/arquivo/i), { target: { files: [fileA, fileB] } })
+    fireEvent.click(screen.getByRole('button', { name: /importar/i }))
+    await waitFor(() =>
+      expect(screen.getByText(/3 notas.*1 já existia.*8 itens/i)).toBeInTheDocument()
+    )
+  })
 })
