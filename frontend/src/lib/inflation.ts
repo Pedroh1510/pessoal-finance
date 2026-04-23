@@ -70,6 +70,7 @@ export async function uploadInflation(file: File): Promise<InflationUploadResult
 
 export async function getInflationItems(params: {
   ncm?: string
+  description?: string
   period?: string
 }): Promise<MarketItemDTO[]> {
   const { data } = await api.get<MarketItemDTO[]>('/inflation/items', { params })
@@ -77,7 +78,8 @@ export async function getInflationItems(params: {
 }
 
 export async function getInflationComparison(params: {
-  ncm: string
+  ncm?: string
+  description?: string
   from: string
   to: string
 }): Promise<NcmComparisonDTO> {

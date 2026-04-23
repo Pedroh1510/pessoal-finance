@@ -47,11 +47,12 @@ export default function InflationPage() {
   const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null)
 
   const [ncmFilter, setNcmFilter] = useState('')
+  const [descriptionFilter, setDescriptionFilter] = useState('')
   const [periodFilter, setPeriodFilter] = useState('')
   const [fromPeriod, setFromPeriod] = useState('')
   const [toPeriod, setToPeriod] = useState('')
 
-  const canShowChart = !!ncmFilter && !!fromPeriod && !!toPeriod
+  const canShowChart = !!(ncmFilter || descriptionFilter) && !!fromPeriod && !!toPeriod
 
   const uploadMutation = useMutation({
     mutationFn: async (filesToUpload: File[]) => {
@@ -88,16 +89,22 @@ export default function InflationPage() {
   })
 
   const itemsQuery = useQuery({
-    queryKey: ['inflation-items', ncmFilter, periodFilter],
+    queryKey: ['inflation-items', ncmFilter, descriptionFilter, periodFilter],
     queryFn: () => getInflationItems({
       ncm: ncmFilter || undefined,
+      description: descriptionFilter || undefined,
       period: periodFilter || undefined,
     }),
   })
 
   const comparisonQuery = useQuery({
-    queryKey: ['inflation-comparison', ncmFilter, fromPeriod, toPeriod],
-    queryFn: () => getInflationComparison({ ncm: ncmFilter, from: fromPeriod, to: toPeriod }),
+    queryKey: ['inflation-comparison', ncmFilter, descriptionFilter, fromPeriod, toPeriod],
+    queryFn: () => getInflationComparison({
+      ncm: ncmFilter || undefined,
+      description: descriptionFilter || undefined,
+      from: fromPeriod,
+      to: toPeriod,
+    }),
     enabled: canShowChart,
   })
 
@@ -109,6 +116,12 @@ export default function InflationPage() {
     setUploadMessage(null)
     uploadMutation.mutate(files)
   }
+
+  const chartTitle = ncmFilter && descriptionFilter
+    ? `Evolução de preço — NCM ${ncmFilter} · ${descriptionFilter}`
+    : ncmFilter
+      ? `Evolução de preço — NCM ${ncmFilter}${comparisonQuery.data?.description ? ` · ${comparisonQuery.data.description}` : ''}`
+      : `Evolução de preço — ${descriptionFilter}`
 
   return (
     <div style={{ maxWidth: 960 }}>
@@ -199,9 +212,21 @@ export default function InflationPage() {
           </label>
 
           <label style={labelStyle}>
+            Descrição
+            <input
+              style={{ ...inputStyle, width: 200 }}
+              value={descriptionFilter}
+              onChange={(e) => setDescriptionFilter(e.target.value)}
+              placeholder="Ex: MILHO PIPOCA"
+              aria-label="Descrição"
+            />
+          </label>
+
+          <label style={labelStyle}>
             Período
             <input
               type="month"
+              className="month-input"
               style={{ ...inputStyle, width: 160 }}
               value={periodFilter}
               onChange={(e) => setPeriodFilter(e.target.value)}
@@ -210,9 +235,10 @@ export default function InflationPage() {
           </label>
 
           <label style={labelStyle}>
-            De (comparativo)
+            De
             <input
               type="month"
+              className="month-input"
               style={{ ...inputStyle, width: 160 }}
               value={fromPeriod}
               onChange={(e) => setFromPeriod(e.target.value)}
@@ -221,9 +247,10 @@ export default function InflationPage() {
           </label>
 
           <label style={labelStyle}>
-            Até (comparativo)
+            Até
             <input
               type="month"
+              className="month-input"
               style={{ ...inputStyle, width: 160 }}
               value={toPeriod}
               onChange={(e) => setToPeriod(e.target.value)}
@@ -236,10 +263,7 @@ export default function InflationPage() {
       {/* Gráfico de comparativo */}
       {canShowChart && comparisonQuery.data && comparisonQuery.data.prices.length > 0 && (
         <div style={{ ...cardStyle, marginBottom: '1.5rem' }}>
-          <h2 style={{ margin: '0 0 1rem', fontSize: '1rem' }}>
-            Evolução de preço — NCM {ncmFilter}
-            {comparisonQuery.data.description && ` · ${comparisonQuery.data.description}`}
-          </h2>
+          <h2 style={{ margin: '0 0 1rem', fontSize: '1rem' }}>{chartTitle}</h2>
           <ResponsiveContainer width="100%" height={280}>
             <LineChart data={comparisonQuery.data.prices}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />

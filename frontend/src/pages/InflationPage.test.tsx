@@ -120,6 +120,33 @@ describe('InflationPage', () => {
     )
   })
 
+  it('renders description filter input', () => {
+    render(<InflationPage />, { wrapper: createWrapper() })
+    expect(screen.getByLabelText(/descrição/i)).toBeInTheDocument()
+  })
+
+  it('passes description to getInflationItems when typed', async () => {
+    render(<InflationPage />, { wrapper: createWrapper() })
+    fireEvent.change(screen.getByLabelText(/descrição/i), { target: { value: 'MILHO' } })
+    await waitFor(() =>
+      expect(inflation.getInflationItems).toHaveBeenCalledWith(
+        expect.objectContaining({ description: 'MILHO' })
+      )
+    )
+  })
+
+  it('calls getInflationComparison when description + from + to are filled', async () => {
+    render(<InflationPage />, { wrapper: createWrapper() })
+    fireEvent.change(screen.getByLabelText(/descrição/i), { target: { value: 'MILHO' } })
+    fireEvent.change(screen.getByLabelText(/^de$/i), { target: { value: '2024-01' } })
+    fireEvent.change(screen.getByLabelText(/^até$/i), { target: { value: '2025-01' } })
+    await waitFor(() =>
+      expect(inflation.getInflationComparison).toHaveBeenCalledWith(
+        expect.objectContaining({ description: 'MILHO', from: '2024-01', to: '2025-01' })
+      )
+    )
+  })
+
   it('shows upload progress while importing multiple files', async () => {
     let resolveFirst!: (v: unknown) => void
     vi.mocked(inflation.uploadInflation)
