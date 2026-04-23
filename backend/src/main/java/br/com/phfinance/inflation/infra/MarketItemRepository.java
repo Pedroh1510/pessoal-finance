@@ -12,13 +12,15 @@ public interface MarketItemRepository extends JpaRepository<MarketItem, UUID> {
 
     @Query("""
         SELECT mi FROM MarketItem mi JOIN FETCH mi.purchase mp
-        WHERE mi.ncm = :ncm
+        WHERE (:ncm IS NULL OR mi.ncm = :ncm)
+          AND (:description IS NULL OR LOWER(mi.description) LIKE LOWER(CONCAT('%', :description, '%')))
           AND mp.date >= :fromDate
           AND mp.date <= :toDate
         ORDER BY mp.date
     """)
     List<MarketItem> findForComparison(
         @Param("ncm") String ncm,
+        @Param("description") String description,
         @Param("fromDate") LocalDate fromDate,
         @Param("toDate") LocalDate toDate
     );
@@ -26,12 +28,14 @@ public interface MarketItemRepository extends JpaRepository<MarketItem, UUID> {
     @Query("""
         SELECT mi FROM MarketItem mi JOIN FETCH mi.purchase mp
         WHERE (:ncm IS NULL OR mi.ncm = :ncm)
+          AND (:description IS NULL OR LOWER(mi.description) LIKE LOWER(CONCAT('%', :description, '%')))
           AND (:fromDate IS NULL OR mp.date >= :fromDate)
           AND (:toDate IS NULL OR mp.date <= :toDate)
         ORDER BY mp.date DESC, mi.ncm
     """)
     List<MarketItem> findFiltered(
         @Param("ncm") String ncm,
+        @Param("description") String description,
         @Param("fromDate") LocalDate fromDate,
         @Param("toDate") LocalDate toDate
     );

@@ -58,12 +58,17 @@ public class InflationController {
 
     @GetMapping("/comparison")
     public NcmComparisonDTO getComparison(
-            @RequestParam String ncm,
+            @RequestParam(required = false) String ncm,
+            @RequestParam(required = false) String description,
             @RequestParam String from,
             @RequestParam String to) {
+        if (ncm == null && description == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                "At least one of 'ncm' or 'description' must be provided");
+        }
         try {
             return marketComparisonService.getComparison(
-                ncm, YearMonth.parse(from), YearMonth.parse(to));
+                ncm, description, YearMonth.parse(from), YearMonth.parse(to));
         } catch (DateTimeParseException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                 "Invalid period format. Expected YYYY-MM");
@@ -73,6 +78,7 @@ public class InflationController {
     @GetMapping("/items")
     public List<MarketItemDTO> getItems(
             @RequestParam(required = false) String ncm,
+            @RequestParam(required = false) String description,
             @RequestParam(required = false) String period) {
         YearMonth yearMonth = null;
         if (period != null) {
@@ -83,6 +89,6 @@ public class InflationController {
                     "Invalid period format. Expected YYYY-MM");
             }
         }
-        return marketComparisonService.getItems(ncm, yearMonth);
+        return marketComparisonService.getItems(ncm, description, yearMonth);
     }
 }
