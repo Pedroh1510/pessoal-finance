@@ -18,12 +18,17 @@ public class MarketComparisonService {
         this.itemRepository = itemRepository;
     }
 
-    public NcmComparisonDTO getComparison(String ncm, YearMonth from, YearMonth to) {
+    public NcmComparisonDTO getComparison(String ncm, String description,
+                                           YearMonth from, YearMonth to) {
         LocalDate fromDate = from.atDay(1);
         LocalDate toDate = to.atEndOfMonth();
 
-        List<MarketItem> items = itemRepository.findForComparison(ncm, fromDate, toDate);
-        String description = items.isEmpty() ? "" : items.get(0).getDescription();
+        List<MarketItem> items = itemRepository.findForComparison(
+            ncm, description, fromDate, toDate);
+
+        String desc = items.isEmpty()
+            ? (description != null ? description : "")
+            : items.get(0).getDescription();
 
         List<PricePointDTO> prices = items.stream()
             .map(item -> new PricePointDTO(
@@ -33,14 +38,14 @@ public class MarketComparisonService {
             ))
             .toList();
 
-        return new NcmComparisonDTO(ncm, description, prices);
+        return new NcmComparisonDTO(ncm != null ? ncm : "", desc, prices);
     }
 
-    public List<MarketItemDTO> getItems(String ncm, YearMonth period) {
+    public List<MarketItemDTO> getItems(String ncm, String description, YearMonth period) {
         LocalDate fromDate = period != null ? period.atDay(1) : null;
         LocalDate toDate = period != null ? period.atEndOfMonth() : null;
 
-        return itemRepository.findFiltered(ncm, fromDate, toDate).stream()
+        return itemRepository.findFiltered(ncm, description, fromDate, toDate).stream()
             .map(this::toDTO)
             .toList();
     }

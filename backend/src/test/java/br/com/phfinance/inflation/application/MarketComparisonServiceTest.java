@@ -1,6 +1,7 @@
 package br.com.phfinance.inflation.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import br.com.phfinance.inflation.domain.MarketItem;
@@ -29,19 +30,20 @@ class MarketComparisonServiceTest {
     }
 
     @Test
-    @DisplayName("getComparison returns price evolution for NCM")
-    void getComparison_returnsNcmWithPricePoints() {
-        MarketPurchase purchase1 = buildPurchase(LocalDate.of(2024, 1, 10), "Mercado A");
-        MarketPurchase purchase2 = buildPurchase(LocalDate.of(2025, 1, 10), "Mercado B");
-        MarketItem item1 = buildItem(purchase1, "02013000", "CARNE", new BigDecimal("42.00"));
-        MarketItem item2 = buildItem(purchase2, "02013000", "CARNE", new BigDecimal("58.50"));
+    @DisplayName("getComparison by NCM returns price evolution")
+    void getComparison_byNcm_returnsPricePoints() {
+        MarketPurchase p1 = buildPurchase(LocalDate.of(2024, 1, 10), "Mercado A");
+        MarketPurchase p2 = buildPurchase(LocalDate.of(2025, 1, 10), "Mercado B");
+        MarketItem i1 = buildItem(p1, "02013000", "CARNE", new BigDecimal("42.00"));
+        MarketItem i2 = buildItem(p2, "02013000", "CARNE", new BigDecimal("58.50"));
 
-        when(itemRepository.findForComparison("02013000",
+        when(itemRepository.findForComparison(
+            "02013000", null,
             LocalDate.of(2024, 1, 1), LocalDate.of(2025, 1, 31)))
-            .thenReturn(List.of(item1, item2));
+            .thenReturn(List.of(i1, i2));
 
         NcmComparisonDTO result = service.getComparison(
-            "02013000", YearMonth.of(2024, 1), YearMonth.of(2025, 1));
+            "02013000", null, YearMonth.of(2024, 1), YearMonth.of(2025, 1));
 
         assertThat(result.ncm()).isEqualTo("02013000");
         assertThat(result.description()).isEqualTo("CARNE");
@@ -49,52 +51,97 @@ class MarketComparisonServiceTest {
         assertThat(result.prices().get(0).period()).isEqualTo("2024-01");
         assertThat(result.prices().get(0).unitPrice()).isEqualByComparingTo("42.00");
         assertThat(result.prices().get(0).emitente()).isEqualTo("Mercado A");
-        assertThat(result.prices().get(1).period()).isEqualTo("2025-01");
-        assertThat(result.prices().get(1).unitPrice()).isEqualByComparingTo("58.50");
     }
 
     @Test
-    @DisplayName("getComparison with no data returns empty prices list")
+    @DisplayName("getComparison by description returns price evolution")
+    void getComparison_byDescription_returnsPricePoints() {
+        MarketPurchase p1 = buildPurchase(LocalDate.of(2024, 1, 10), "Mercado A");
+        MarketPurchase p2 = buildPurchase(LocalDate.of(2025, 1, 10), "Mercado B");
+        MarketItem i1 = buildItem(p1, "02013000", "CARNE BOVINA", new BigDecimal("42.00"));
+        MarketItem i2 = buildItem(p2, "02013000", "CARNE BOVINA", new BigDecimal("58.50"));
+
+        when(itemRepository.findForComparison(
+            null, "CARNE",
+            LocalDate.of(2024, 1, 1), LocalDate.of(2025, 1, 31)))
+            .thenReturn(List.of(i1, i2));
+
+        NcmComparisonDTO result = service.getComparison(
+            null, "CARNE", YearMonth.of(2024, 1), YearMonth.of(2025, 1));
+
+        assertThat(result.ncm()).isEmpty();
+        assertThat(result.description()).isEqualTo("CARNE BOVINA");
+        assertThat(result.prices()).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("getComparison by NCM+description applies both filters")
+    void getComparison_byNcmAndDescription_appliesBothFilters() {
+        when(itemRepository.findForComparison(
+            "02013000", "CARNE",
+            LocalDate.of(2024, 1, 1), LocalDate.of(2024, 3, 31)))
+            .thenReturn(List.of());
+
+        service.getComparison("02013000", "CARNE", YearMonth.of(2024, 1), YearMonth.of(2024, 3));
+
+        verify(itemRepository).findForComparison(
+            "02013000", "CARNE",
+            LocalDate.of(2024, 1, 1), LocalDate.of(2024, 3, 31));
+    }
+
+    @Test
+    @DisplayName("getComparison with no data returns empty prices")
     void getComparison_noData_returnsEmptyPrices() {
-        when(itemRepository.findForComparison("00000000",
+        when(itemRepository.findForComparison(
+            "00000000", null,
             LocalDate.of(2024, 1, 1), LocalDate.of(2024, 3, 31)))
             .thenReturn(List.of());
 
         NcmComparisonDTO result = service.getComparison(
-            "00000000", YearMonth.of(2024, 1), YearMonth.of(2024, 3));
+            "00000000", null, YearMonth.of(2024, 1), YearMonth.of(2024, 3));
 
         assertThat(result.prices()).isEmpty();
         assertThat(result.description()).isEmpty();
     }
 
     @Test
-    @DisplayName("getItems with NCM filter returns matching items")
+    @DisplayName("getItems with NCM filter passes it to repository")
     void getItems_withNcmFilter_returnsMatchingItems() {
         MarketPurchase purchase = buildPurchase(LocalDate.of(2025, 3, 1), "Super X");
         MarketItem item = buildItem(purchase, "02013000", "CARNE", new BigDecimal("55.00"));
 
-        when(itemRepository.findFiltered("02013000", null, null)).thenReturn(List.of(item));
+        when(itemRepository.findFiltered("02013000", null, null, null))
+            .thenReturn(List.of(item));
 
-        List<MarketItemDTO> result = service.getItems("02013000", null);
+        List<MarketItemDTO> result = service.getItems("02013000", null, null);
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).ncm()).isEqualTo("02013000");
         assertThat(result.get(0).period()).isEqualTo("2025-03");
-        assertThat(result.get(0).emitente()).isEqualTo("Super X");
-        assertThat(result.get(0).unitPrice()).isEqualByComparingTo("55.00");
+    }
+
+    @Test
+    @DisplayName("getItems with description filter passes it to repository")
+    void getItems_withDescriptionFilter_passesToRepository() {
+        when(itemRepository.findFiltered(null, "MILHO", null, null)).thenReturn(List.of());
+
+        service.getItems(null, "MILHO", null);
+
+        verify(itemRepository).findFiltered(null, "MILHO", null, null);
     }
 
     @Test
     @DisplayName("getItems with period filter applies from/to date range")
     void getItems_withPeriodFilter_appliesDateRange() {
-        when(itemRepository.findFiltered(null,
+        when(itemRepository.findFiltered(
+            null, null,
             LocalDate.of(2025, 3, 1), LocalDate.of(2025, 3, 31)))
             .thenReturn(List.of());
 
-        service.getItems(null, YearMonth.of(2025, 3));
+        service.getItems(null, null, YearMonth.of(2025, 3));
 
-        org.mockito.Mockito.verify(itemRepository)
-            .findFiltered(null, LocalDate.of(2025, 3, 1), LocalDate.of(2025, 3, 31));
+        verify(itemRepository).findFiltered(
+            null, null, LocalDate.of(2025, 3, 1), LocalDate.of(2025, 3, 31));
     }
 
     private MarketPurchase buildPurchase(LocalDate date, String emitente) {

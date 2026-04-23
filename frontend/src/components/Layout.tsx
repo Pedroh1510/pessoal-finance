@@ -23,6 +23,12 @@ export default function Layout() {
           background: 'var(--color-surface)',
           display: 'flex',
           flexDirection: 'column',
+          position: 'sticky',
+          top: 0,
+          height: '100vh',
+          overflowY: 'auto',
+          flexShrink: 0,
+          boxSizing: 'border-box',
         }}
       >
         <h2 style={{ margin: '0 0 1rem', color: 'var(--color-text)' }}>Finance</h2>
