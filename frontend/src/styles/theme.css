@@ -35,3 +35,15 @@ body {
   color: var(--color-text);
   margin: 0;
 }
+
+input[type="month"].month-input::-webkit-calendar-picker-indicator,
+input[type="date"].month-input::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+[data-theme="dark"] input[type="month"].month-input::-webkit-calendar-picker-indicator,
+[data-theme="dark"] input[type="date"].month-input::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.8;
+}
