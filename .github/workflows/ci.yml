@@ -7,7 +7,7 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   backend:
@@ -141,11 +141,15 @@ jobs:
           key: maven-${{ hashFiles('backend/pom.xml') }}
           restore-keys: maven-
 
+      - name: Get current week
+        id: date
+        run: echo "week=$(date +%Y-%W)" >> $GITHUB_OUTPUT
+
       - name: Cache OWASP NVD database
         uses: actions/cache@v4
         with:
           path: ~/.m2/repository/org/owasp/dependency-check-data
-          key: owasp-nvd-${{ github.run_id }}
+          key: owasp-nvd-${{ steps.date.outputs.week }}
           restore-keys: owasp-nvd-
 
       - name: Run OWASP Dependency Check
