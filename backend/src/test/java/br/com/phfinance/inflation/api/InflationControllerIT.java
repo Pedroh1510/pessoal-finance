@@ -107,6 +107,42 @@ class InflationControllerIT {
             .andExpect(status().isBadRequest());
     }
 
+    @Test
+    void getComparison_withDescriptionOnly_returns200() throws Exception {
+        mockMvc.perform(get("/api/inflation/comparison")
+                .param("description", "MILHO")
+                .param("from", "2024-01")
+                .param("to", "2025-01"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.prices").isArray());
+    }
+
+    @Test
+    void getComparison_withNcmAndDescription_returns200() throws Exception {
+        mockMvc.perform(get("/api/inflation/comparison")
+                .param("ncm", "10059010")
+                .param("description", "MILHO")
+                .param("from", "2024-01")
+                .param("to", "2025-01"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.prices").isArray());
+    }
+
+    @Test
+    void getComparison_withoutNcmOrDescription_returns400() throws Exception {
+        mockMvc.perform(get("/api/inflation/comparison")
+                .param("from", "2024-01")
+                .param("to", "2025-01"))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void getItems_withDescriptionFilter_returns200() throws Exception {
+        mockMvc.perform(get("/api/inflation/items").param("description", "MILHO"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isArray());
+    }
+
     private String uniqueChave() {
         String uuid = UUID.randomUUID().toString().replace("-", "");
         // NFe chave tem 44 dígitos — preenche com dígitos do UUID (hex -> tomar só dígitos)
