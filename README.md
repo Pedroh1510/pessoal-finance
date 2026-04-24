@@ -1,5 +1,8 @@
 # PH Finance
 
+[![CI](https://github.com/Pedroh1510/pessoal-finance/actions/workflows/ci.yml/badge.svg)](https://github.com/Pedroh1510/pessoal-finance/actions/workflows/ci.yml)
+[![Gitleaks](https://img.shields.io/badge/security-gitleaks-green)](https://github.com/gitleaks/gitleaks)
+
 Aplicação de controle financeiro pessoal para acompanhamento de transações bancárias, rastreamento de inflação em mercados e patrimônio.
 
 ## Funcionalidades
