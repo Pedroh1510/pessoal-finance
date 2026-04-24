@@ -2,7 +2,6 @@
 
 [![CI](https://github.com/Pedroh1510/pessoal-finance/actions/workflows/ci.yml/badge.svg)](https://github.com/Pedroh1510/pessoal-finance/actions/workflows/ci.yml)
 [![Gitleaks](https://img.shields.io/badge/security-gitleaks-green)](https://github.com/gitleaks/gitleaks)
-[![OWASP](https://img.shields.io/badge/security-OWASP%20Dependency%20Check-blue)](https://owasp.org/www-project-dependency-check/)
 
 Aplicação de controle financeiro pessoal para acompanhamento de transações bancárias, rastreamento de inflação em mercados e patrimônio.
 

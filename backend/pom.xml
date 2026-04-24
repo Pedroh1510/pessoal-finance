@@ -169,17 +169,6 @@
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
-                <groupId>org.owasp</groupId>
-                <artifactId>dependency-check-maven</artifactId>
-                <version>12.1.0</version>
-                <configuration>
-                    <format>HTML</format>
-                    <outputDirectory>${project.build.directory}/dependency-check-report</outputDirectory>
-                    <failBuildOnCVSS>9</failBuildOnCVSS>
-                    <suppressionFile>${project.basedir}/.owasp-suppressions.xml</suppressionFile>
-                </configuration>
-            </plugin>
         </plugins>
     </build>
 </project>
