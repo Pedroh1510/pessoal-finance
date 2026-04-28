@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
@@ -61,8 +61,9 @@ describe('LoginPage', () => {
   })
 
   it('disables button while loading', async () => {
+    let resolveLogin!: () => void
     const mockLogin = vi.fn().mockImplementation(
-      () => new Promise((resolve) => setTimeout(resolve, 100))
+      () => new Promise<void>((resolve) => { resolveLogin = resolve })
     )
     vi.mocked(AuthContext.useAuth).mockReturnValue({
       user: null, isLoading: false, login: mockLogin, logout: vi.fn(),
@@ -74,5 +75,8 @@ describe('LoginPage', () => {
     await userEvent.click(screen.getByRole('button', { name: /entrar/i }))
 
     expect(screen.getByRole('button')).toBeDisabled()
+
+    await act(async () => { resolveLogin() })
+    await waitFor(() => expect(screen.getByRole('button')).not.toBeDisabled())
   })
 })

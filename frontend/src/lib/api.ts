@@ -7,7 +7,7 @@ api.interceptors.response.use(
   (error) => {
     const url = error.config?.url as string | undefined
     const isAuthEndpoint = url?.startsWith('/auth') ?? false
-    if (error.response?.status === 401 && !isAuthEndpoint) {
+    if (error.response?.status === 401 && !isAuthEndpoint && typeof window !== 'undefined') {
       window.location.href = '/login'
     }
     return Promise.reject(error)
