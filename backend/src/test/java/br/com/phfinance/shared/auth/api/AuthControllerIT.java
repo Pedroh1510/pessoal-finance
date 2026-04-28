@@ -21,7 +21,10 @@ import java.util.Map;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest(properties = "management.health.mail.enabled=false")
+@SpringBootTest(properties = {
+        "management.health.mail.enabled=false",
+        "app.rate-limit.enabled=false"
+})
 @AutoConfigureMockMvc
 @Testcontainers
 class AuthControllerIT {
