@@ -19,6 +19,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private final ConcurrentMap<String, Bucket> uploadBuckets = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, Bucket> apiBuckets = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, Bucket> authBuckets = new ConcurrentHashMap<>();
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
@@ -31,9 +32,14 @@ public class RateLimitFilter extends OncePerRequestFilter {
         }
 
         String ip = resolveClientIp(request);
-        Bucket bucket = uri.contains("/uploads")
-                ? uploadBuckets.computeIfAbsent(ip, k -> buildUploadBucket())
-                : apiBuckets.computeIfAbsent(ip, k -> buildApiBucket());
+        Bucket bucket;
+        if (uri.contains("/uploads")) {
+            bucket = uploadBuckets.computeIfAbsent(ip, k -> buildUploadBucket());
+        } else if (uri.startsWith("/api/auth/login") || uri.startsWith("/api/auth/register")) {
+            bucket = authBuckets.computeIfAbsent(ip, k -> buildAuthBucket());
+        } else {
+            bucket = apiBuckets.computeIfAbsent(ip, k -> buildApiBucket());
+        }
 
         if (bucket.tryConsume(1)) {
             filterChain.doFilter(request, response);
@@ -58,6 +64,15 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 .addLimit(Bandwidth.builder()
                         .capacity(300)
                         .refillIntervally(300, Duration.ofMinutes(1))
+                        .build())
+                .build();
+    }
+
+    private Bucket buildAuthBucket() {
+        return Bucket.builder()
+                .addLimit(Bandwidth.builder()
+                        .capacity(10)
+                        .refillIntervally(10, Duration.ofMinutes(1))
                         .build())
                 .build();
     }
