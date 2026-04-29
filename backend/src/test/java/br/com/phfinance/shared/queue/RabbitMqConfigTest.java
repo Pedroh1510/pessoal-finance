@@ -2,8 +2,10 @@ package br.com.phfinance.shared.queue;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.amqp.core.AmqpAdmin;
+import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueInformation;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
@@ -29,6 +31,10 @@ class RabbitMqConfigTest {
 
     @Autowired AmqpAdmin amqpAdmin;
 
+    @Autowired @Qualifier("financeUploadQueue")    Queue financeUploadQueue;
+    @Autowired @Qualifier("inflationUploadQueue")  Queue inflationUploadQueue;
+    @Autowired @Qualifier("financeReprocessQueue") Queue financeReprocessQueue;
+
     @Test
     void financeUploadQueueDeclared() {
         QueueInformation info = amqpAdmin.getQueueInfo(RabbitMqConfig.FINANCE_UPLOAD_QUEUE);
@@ -50,5 +56,26 @@ class RabbitMqConfigTest {
         assertThat(amqpAdmin.getQueueInfo(RabbitMqConfig.FINANCE_UPLOAD_DLQ)).isNotNull();
         assertThat(amqpAdmin.getQueueInfo(RabbitMqConfig.INFLATION_UPLOAD_DLQ)).isNotNull();
         assertThat(amqpAdmin.getQueueInfo(RabbitMqConfig.FINANCE_REPROCESS_DLQ)).isNotNull();
+    }
+
+    @Test
+    void financeUploadQueue_hasDlxWired() {
+        assertThat(financeUploadQueue.getArguments())
+                .containsEntry("x-dead-letter-exchange", RabbitMqConfig.DLX_EXCHANGE)
+                .containsEntry("x-dead-letter-routing-key", RabbitMqConfig.FINANCE_UPLOAD_DLQ);
+    }
+
+    @Test
+    void inflationUploadQueue_hasDlxWired() {
+        assertThat(inflationUploadQueue.getArguments())
+                .containsEntry("x-dead-letter-exchange", RabbitMqConfig.DLX_EXCHANGE)
+                .containsEntry("x-dead-letter-routing-key", RabbitMqConfig.INFLATION_UPLOAD_DLQ);
+    }
+
+    @Test
+    void financeReprocessQueue_hasDlxWired() {
+        assertThat(financeReprocessQueue.getArguments())
+                .containsEntry("x-dead-letter-exchange", RabbitMqConfig.DLX_EXCHANGE)
+                .containsEntry("x-dead-letter-routing-key", RabbitMqConfig.FINANCE_REPROCESS_DLQ);
     }
 }

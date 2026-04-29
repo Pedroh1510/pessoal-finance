@@ -26,71 +26,78 @@ public class RabbitMqConfig {
     public static final String INFLATION_UPLOAD_DLQ    = "inflation.upload.dlq";
     public static final String FINANCE_REPROCESS_DLQ   = "finance.reprocess.dlq";
 
-    @Value("${app.queue.consumer.concurrency:1}")
-    private int concurrency;
+    private static final String X_DEAD_LETTER_EXCHANGE    = "x-dead-letter-exchange";
+    private static final String X_DEAD_LETTER_ROUTING_KEY = "x-dead-letter-routing-key";
 
-    @Value("${app.queue.retry.max-attempts:3}")
-    private int maxAttempts;
+    private final int concurrency;
+    private final int maxAttempts;
+    private final long initialInterval;
+    private final double multiplier;
 
-    @Value("${app.queue.retry.initial-interval:5000}")
-    private long initialInterval;
+    public RabbitMqConfig(
+            @Value("${app.queue.consumer.concurrency:1}") int concurrency,
+            @Value("${app.queue.retry.max-attempts:3}") int maxAttempts,
+            @Value("${app.queue.retry.initial-interval:5000}") long initialInterval,
+            @Value("${app.queue.retry.multiplier:5.0}") double multiplier) {
+        this.concurrency = concurrency;
+        this.maxAttempts = maxAttempts;
+        this.initialInterval = initialInterval;
+        this.multiplier = multiplier;
+    }
 
-    @Value("${app.queue.retry.multiplier:5.0}")
-    private double multiplier;
-
-    @Bean DirectExchange mainExchange() {
+    @Bean public DirectExchange mainExchange() {
         return new DirectExchange(MAIN_EXCHANGE, true, false);
     }
 
-    @Bean DirectExchange deadLetterExchange() {
+    @Bean public DirectExchange deadLetterExchange() {
         return new DirectExchange(DLX_EXCHANGE, true, false);
     }
 
-    @Bean Queue financeUploadQueue() {
+    @Bean public Queue financeUploadQueue() {
         return QueueBuilder.durable(FINANCE_UPLOAD_QUEUE)
-                .withArgument("x-dead-letter-exchange", DLX_EXCHANGE)
-                .withArgument("x-dead-letter-routing-key", FINANCE_UPLOAD_DLQ)
+                .withArgument(X_DEAD_LETTER_EXCHANGE, DLX_EXCHANGE)
+                .withArgument(X_DEAD_LETTER_ROUTING_KEY, FINANCE_UPLOAD_DLQ)
                 .build();
     }
 
-    @Bean Queue inflationUploadQueue() {
+    @Bean public Queue inflationUploadQueue() {
         return QueueBuilder.durable(INFLATION_UPLOAD_QUEUE)
-                .withArgument("x-dead-letter-exchange", DLX_EXCHANGE)
-                .withArgument("x-dead-letter-routing-key", INFLATION_UPLOAD_DLQ)
+                .withArgument(X_DEAD_LETTER_EXCHANGE, DLX_EXCHANGE)
+                .withArgument(X_DEAD_LETTER_ROUTING_KEY, INFLATION_UPLOAD_DLQ)
                 .build();
     }
 
-    @Bean Queue financeReprocessQueue() {
+    @Bean public Queue financeReprocessQueue() {
         return QueueBuilder.durable(FINANCE_REPROCESS_QUEUE)
-                .withArgument("x-dead-letter-exchange", DLX_EXCHANGE)
-                .withArgument("x-dead-letter-routing-key", FINANCE_REPROCESS_DLQ)
+                .withArgument(X_DEAD_LETTER_EXCHANGE, DLX_EXCHANGE)
+                .withArgument(X_DEAD_LETTER_ROUTING_KEY, FINANCE_REPROCESS_DLQ)
                 .build();
     }
 
-    @Bean Queue financeUploadDlq()    { return QueueBuilder.durable(FINANCE_UPLOAD_DLQ).build(); }
-    @Bean Queue inflationUploadDlq()  { return QueueBuilder.durable(INFLATION_UPLOAD_DLQ).build(); }
-    @Bean Queue financeReprocessDlq() { return QueueBuilder.durable(FINANCE_REPROCESS_DLQ).build(); }
+    @Bean public Queue financeUploadDlq()    { return QueueBuilder.durable(FINANCE_UPLOAD_DLQ).build(); }
+    @Bean public Queue inflationUploadDlq()  { return QueueBuilder.durable(INFLATION_UPLOAD_DLQ).build(); }
+    @Bean public Queue financeReprocessDlq() { return QueueBuilder.durable(FINANCE_REPROCESS_DLQ).build(); }
 
-    @Bean Binding financeUploadBinding() {
+    @Bean public Binding financeUploadBinding() {
         return BindingBuilder.bind(financeUploadQueue()).to(mainExchange()).with(FINANCE_UPLOAD_QUEUE);
     }
-    @Bean Binding inflationUploadBinding() {
+    @Bean public Binding inflationUploadBinding() {
         return BindingBuilder.bind(inflationUploadQueue()).to(mainExchange()).with(INFLATION_UPLOAD_QUEUE);
     }
-    @Bean Binding financeReprocessBinding() {
+    @Bean public Binding financeReprocessBinding() {
         return BindingBuilder.bind(financeReprocessQueue()).to(mainExchange()).with(FINANCE_REPROCESS_QUEUE);
     }
-    @Bean Binding financeUploadDlqBinding() {
+    @Bean public Binding financeUploadDlqBinding() {
         return BindingBuilder.bind(financeUploadDlq()).to(deadLetterExchange()).with(FINANCE_UPLOAD_DLQ);
     }
-    @Bean Binding inflationUploadDlqBinding() {
+    @Bean public Binding inflationUploadDlqBinding() {
         return BindingBuilder.bind(inflationUploadDlq()).to(deadLetterExchange()).with(INFLATION_UPLOAD_DLQ);
     }
-    @Bean Binding financeReprocessDlqBinding() {
+    @Bean public Binding financeReprocessDlqBinding() {
         return BindingBuilder.bind(financeReprocessDlq()).to(deadLetterExchange()).with(FINANCE_REPROCESS_DLQ);
     }
 
-    @Bean Jackson2JsonMessageConverter messageConverter() {
+    @Bean public Jackson2JsonMessageConverter messageConverter() {
         return new Jackson2JsonMessageConverter();
     }
 
@@ -102,7 +109,7 @@ public class RabbitMqConfig {
         ExponentialBackOffPolicy backOff = new ExponentialBackOffPolicy();
         backOff.setInitialInterval(initialInterval);
         backOff.setMultiplier(multiplier);
-        backOff.setMaxInterval(initialInterval * (long) Math.pow(multiplier, maxAttempts));
+        backOff.setMaxInterval(initialInterval * (long) Math.pow(multiplier, maxAttempts - 1));
 
         RetryTemplate retryTemplate = new RetryTemplate();
         retryTemplate.setRetryPolicy(new SimpleRetryPolicy(maxAttempts));
