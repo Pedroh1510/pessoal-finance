@@ -35,6 +35,11 @@ spring:
           auth: false
           starttls:
             enable: false
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: 5672
+    username: ${RABBITMQ_USER:finance}
+    password: ${RABBITMQ_PASSWORD:finance}
 
 springdoc:
   api-docs:
@@ -53,3 +58,12 @@ management:
 
 app:
   base-url: ${APP_BASE_URL:http://localhost:3000}
+  queue:
+    consumer:
+      concurrency: 1
+    retry:
+      max-attempts: 3
+      initial-interval: 5000
+      multiplier: 5.0
+    file:
+      temp-dir: /tmp/ph-finance

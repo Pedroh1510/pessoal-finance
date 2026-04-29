@@ -13,7 +13,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(properties = "management.health.mail.enabled=false")
+@SpringBootTest(properties = {"management.health.mail.enabled=false", "management.health.rabbit.enabled=false"})
 @Testcontainers
 class MigrationV5IT {
 
