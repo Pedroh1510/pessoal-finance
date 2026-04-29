@@ -11,8 +11,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class UploadJobService {
@@ -31,6 +33,16 @@ public class UploadJobService {
         this.outboxEventRepository = outboxEventRepository;
         this.objectMapper = objectMapper;
         this.tempDir = tempDir;
+    }
+
+    @Transactional(readOnly = true)
+    public JobResponse getJobForUser(UUID id, String userId) {
+        UploadJob job = uploadJobRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Job not found"));
+        if (!job.getUserId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+        }
+        return JobResponse.from(job, objectMapper);
     }
 
     @Transactional

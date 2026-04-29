@@ -102,6 +102,26 @@ class UploadJobServiceTest {
     }
 
     @Test
+    void createInflationUploadJob_savesFileAndCreatesOutboxEvent() throws Exception {
+        byte[] bytes = "xlsx-content".getBytes();
+        UUID jobId = service.createInflationUploadJob(bytes, "market.xlsx", "user@example.com");
+
+        assertThat(jobId).isNotNull();
+
+        ArgumentCaptor<UploadJob> jobCaptor = ArgumentCaptor.forClass(UploadJob.class);
+        verify(uploadJobRepository).save(jobCaptor.capture());
+        UploadJob saved = jobCaptor.getValue();
+        assertThat(saved.getType()).isEqualTo(JobType.INFLATION_UPLOAD);
+        assertThat(saved.getStatus()).isEqualTo(JobStatus.QUEUED);
+        assertThat(saved.getUserId()).isEqualTo("user@example.com");
+        assertThat(saved.getFilePath()).startsWith(tempDir.toString());
+
+        ArgumentCaptor<OutboxEvent> eventCaptor = ArgumentCaptor.forClass(OutboxEvent.class);
+        verify(outboxEventRepository).save(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().getQueueName()).isEqualTo(RabbitMqConfig.INFLATION_UPLOAD_QUEUE);
+    }
+
+    @Test
     void createReprocessJob_createsJobWithoutFile() throws Exception {
         String userId = "user@example.com";
 

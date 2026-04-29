@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public record JobResponse(
         UUID id,
@@ -15,16 +17,15 @@ public record JobResponse(
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt) {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final Logger log = LoggerFactory.getLogger(JobResponse.class);
 
-    public static JobResponse from(UploadJob job) {
+    public static JobResponse from(UploadJob job, ObjectMapper objectMapper) {
         Map<String, Object> result = null;
-        String resultJson = job.getResultJson();
-        if (resultJson != null) {
+        if (job.getResultJson() != null) {
             try {
-                result = MAPPER.readValue(resultJson, new TypeReference<Map<String, Object>>() {});
-            } catch (Exception ignored) {
-                // leave result as null
+                result = objectMapper.readValue(job.getResultJson(), new TypeReference<>() {});
+            } catch (Exception e) {
+                log.warn("Failed to deserialize resultJson for job {}", job.getId(), e);
             }
         }
         return new JobResponse(
