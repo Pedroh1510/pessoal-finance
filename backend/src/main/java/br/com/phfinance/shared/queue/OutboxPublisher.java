@@ -1,6 +1,8 @@
 package br.com.phfinance.shared.queue;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -10,6 +12,8 @@ import java.util.List;
 
 @Component
 public class OutboxPublisher {
+
+    private static final Logger log = LoggerFactory.getLogger(OutboxPublisher.class);
 
     private final OutboxEventRepository outboxEventRepository;
     private final RabbitTemplate rabbitTemplate;
@@ -38,7 +42,7 @@ public class OutboxPublisher {
                 event.setPublished(true);
                 outboxEventRepository.save(event);
             } catch (Exception e) {
-                // leave unpublished; retried on next tick
+                log.error("Failed to publish outbox event id={}, queueName={}", event.getId(), event.getQueueName(), e);
             }
         }
     }
