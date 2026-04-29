@@ -12,6 +12,8 @@ import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import java.time.OffsetDateTime;
 import java.util.UUID;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "upload_jobs")
@@ -38,6 +40,7 @@ public class UploadJob {
     @Column(name = "original_filename")
     private String originalFilename;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "result_json", columnDefinition = "jsonb")
     private String resultJson;
 
