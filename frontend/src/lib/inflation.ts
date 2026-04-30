@@ -48,14 +48,14 @@ export interface InflationUploadResult {
   itemsImported: number
 }
 
-export async function uploadInflation(file: File): Promise<InflationUploadResult> {
+export async function uploadInflation(file: File): Promise<{ jobId: string }> {
   const formData = new FormData()
   formData.append('file', file)
 
   let lastError: unknown
   for (let attempt = 0; attempt <= UPLOAD_MAX_RETRIES; attempt++) {
     try {
-      const { data } = await api.post<InflationUploadResult>('/inflation/uploads', formData, {
+      const { data } = await api.post<{ jobId: string }>('/inflation/uploads', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
       return data

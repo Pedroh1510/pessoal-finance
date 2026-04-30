@@ -6,15 +6,19 @@ import InflationPage from './InflationPage'
 import * as inflation from '../lib/inflation'
 
 vi.mock('../lib/inflation', () => ({
-  uploadInflation: vi.fn().mockResolvedValue({
-    purchasesCreated: 1,
-    purchasesSkipped: 0,
-    itemsImported: 3,
-  }),
+  uploadInflation: vi.fn().mockResolvedValue({ jobId: 'job-1' }),
   getInflationItems: vi.fn().mockResolvedValue([]),
   getInflationComparison: vi.fn().mockResolvedValue({
     ncm: '', description: '', prices: [],
   }),
+}))
+
+vi.mock('../lib/jobs', () => ({
+  getJob: vi.fn().mockResolvedValue({
+    id: 'job-1', type: 'INFLATION_UPLOAD', status: 'QUEUED',
+    result: null, errorMessage: null, createdAt: '', updatedAt: '',
+  }),
+  isTerminal: (status: string) => status === 'COMPLETED' || status === 'FAILED',
 }))
 
 function createWrapper() {
@@ -52,13 +56,13 @@ describe('InflationPage', () => {
     )
   })
 
-  it('shows success message with purchases and items count after upload', async () => {
+  it('shows success message after upload is sent', async () => {
     render(<InflationPage />, { wrapper: createWrapper() })
     const file = new File(['data'], '2603_produtos.xls', { type: 'application/vnd.ms-excel' })
     fireEvent.change(screen.getByLabelText(/arquivo/i), { target: { files: [file] } })
     fireEvent.click(screen.getByRole('button', { name: /importar/i }))
     await waitFor(() =>
-      expect(screen.getByText(/1 nota.*3 itens/i)).toBeInTheDocument()
+      expect(screen.getByText(/1 upload\(s\) enviado\(s\).*processando em background/i)).toBeInTheDocument()
     )
   })
 
@@ -106,17 +110,17 @@ describe('InflationPage', () => {
     expect(inflation.uploadInflation).toHaveBeenCalledWith(fileB)
   })
 
-  it('shows aggregated result after uploading multiple files', async () => {
+  it('shows sent confirmation after uploading multiple files', async () => {
     vi.mocked(inflation.uploadInflation)
-      .mockResolvedValueOnce({ purchasesCreated: 2, purchasesSkipped: 0, itemsImported: 5 })
-      .mockResolvedValueOnce({ purchasesCreated: 1, purchasesSkipped: 1, itemsImported: 3 })
+      .mockResolvedValueOnce({ jobId: 'job-1' })
+      .mockResolvedValueOnce({ jobId: 'job-2' })
     render(<InflationPage />, { wrapper: createWrapper() })
     const fileA = new File(['a'], 'jan.xls', { type: 'application/vnd.ms-excel' })
     const fileB = new File(['b'], 'fev.xls', { type: 'application/vnd.ms-excel' })
     fireEvent.change(screen.getByLabelText(/arquivo/i), { target: { files: [fileA, fileB] } })
     fireEvent.click(screen.getByRole('button', { name: /importar/i }))
     await waitFor(() =>
-      expect(screen.getByText(/3 notas.*1 já existia.*8 itens/i)).toBeInTheDocument()
+      expect(screen.getByText(/2 upload\(s\) enviado\(s\).*processando em background/i)).toBeInTheDocument()
     )
   })
 
@@ -153,7 +157,7 @@ describe('InflationPage', () => {
       .mockImplementationOnce(
         () => new Promise((res) => { resolveFirst = res }),
       )
-      .mockResolvedValue({ purchasesCreated: 1, purchasesSkipped: 0, itemsImported: 2 })
+      .mockResolvedValue({ jobId: 'job-2' })
 
     render(<InflationPage />, { wrapper: createWrapper() })
     const fileA = new File(['a'], 'jan.xls', { type: 'application/vnd.ms-excel' })
@@ -163,7 +167,7 @@ describe('InflationPage', () => {
 
     expect(await screen.findByText(/importando 1 de 2/i)).toBeInTheDocument()
 
-    resolveFirst({ purchasesCreated: 1, purchasesSkipped: 0, itemsImported: 2 })
+    resolveFirst({ jobId: 'job-1' })
     await waitFor(() =>
       expect(screen.queryByText(/importando 1 de 2/i)).not.toBeInTheDocument(),
     )

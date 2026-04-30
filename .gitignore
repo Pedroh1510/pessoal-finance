@@ -26,3 +26,5 @@ frontend/.vite/
 
 # Worktrees
 .worktrees/
+*.log
+exemplos

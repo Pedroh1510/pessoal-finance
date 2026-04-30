@@ -16,7 +16,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest(properties = "management.health.mail.enabled=false")
+@SpringBootTest(properties = {"management.health.mail.enabled=false", "management.health.rabbit.enabled=false"})
 @AutoConfigureMockMvc
 @Testcontainers
 class HealthCheckIT {

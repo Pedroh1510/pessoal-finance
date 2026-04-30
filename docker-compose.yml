@@ -21,6 +21,20 @@ services:
       - "1025:1025"
       - "8025:8025"
 
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-finance}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-finance}
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   backend:
     build:
       context: ./backend
@@ -38,8 +52,13 @@ services:
       MAIL_PORT: 1025
       MAIL_USERNAME: mailpit
       MAIL_PASSWORD: mailpit
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: ${RABBITMQ_USER:-finance}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-finance}
     depends_on:
       db:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   frontend:

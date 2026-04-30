@@ -5,7 +5,15 @@ import UploadsPage from './UploadsPage'
 import * as finance from '../lib/finance'
 
 vi.mock('../lib/finance', () => ({
-  uploadStatement: vi.fn().mockResolvedValue({ total: 10, internalTransfers: 2, uncategorized: 3 }),
+  uploadStatement: vi.fn().mockResolvedValue({ jobId: 'job-abc' }),
+}))
+
+vi.mock('../lib/jobs', () => ({
+  getJob: vi.fn().mockResolvedValue({
+    id: 'job-abc', type: 'FINANCE_UPLOAD', status: 'QUEUED',
+    result: null, errorMessage: null, createdAt: '', updatedAt: '',
+  }),
+  isTerminal: (status: string) => status === 'COMPLETED' || status === 'FAILED',
 }))
 
 function createWrapper() {
@@ -65,7 +73,7 @@ describe('UploadsPage', () => {
   })
 
   it('uploads each file sequentially and shows results in history', async () => {
-    vi.mocked(finance.uploadStatement).mockResolvedValue({ total: 3, internalTransfers: 1, uncategorized: 0 })
+    vi.mocked(finance.uploadStatement).mockResolvedValue({ jobId: 'job-abc' })
     render(<UploadsPage />, { wrapper: createWrapper() })
     const input = screen.getByLabelText(/selecionar arquivos pdf/i)
     fireEvent.change(input, { target: { files: [makeFile('jan.pdf'), makeFile('feb.pdf')] } })
@@ -77,7 +85,7 @@ describe('UploadsPage', () => {
 
   it('shows error for failed files without stopping others', async () => {
     vi.mocked(finance.uploadStatement)
-      .mockResolvedValueOnce({ total: 2, internalTransfers: 0, uncategorized: 0 })
+      .mockResolvedValueOnce({ jobId: 'job-abc' })
       .mockRejectedValueOnce(new Error('Arquivo inválido'))
     render(<UploadsPage />, { wrapper: createWrapper() })
     const input = screen.getByLabelText(/selecionar arquivos pdf/i)

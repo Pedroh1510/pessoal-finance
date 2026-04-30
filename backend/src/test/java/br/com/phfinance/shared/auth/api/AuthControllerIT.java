@@ -23,6 +23,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest(properties = {
         "management.health.mail.enabled=false",
+        "management.health.rabbit.enabled=false",
         "app.rate-limit.enabled=false"
 })
 @AutoConfigureMockMvc
