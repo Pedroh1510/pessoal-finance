@@ -60,7 +60,7 @@ public class FinanceController {
     public ResponseEntity<Map<String, Object>> upload(
             @RequestParam("file") MultipartFile file,
             @RequestParam("bankName") String bankName,
-            Authentication auth) throws java.io.IOException {
+            Authentication auth) {
         if (file.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File must not be empty");
         }
@@ -79,9 +79,13 @@ public class FinanceController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Invalid bank name '" + bankName + "'. Valid values: " + valid);
         }
-        UUID jobId = uploadJobService.createFinanceUploadJob(
-                file.getBytes(), file.getOriginalFilename(), bankName, auth.getName());
-        return ResponseEntity.accepted().body(Map.of("jobId", jobId));
+        try {
+            UUID jobId = uploadJobService.createFinanceUploadJob(
+                    file.getBytes(), file.getOriginalFilename(), bankName, auth.getName());
+            return ResponseEntity.accepted().body(Map.of("jobId", jobId));
+        } catch (java.io.IOException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to read uploaded file");
+        }
     }
 
     @GetMapping("/transactions")
@@ -148,8 +152,12 @@ public class FinanceController {
     }
 
     @PostMapping("/reprocess")
-    public ResponseEntity<Map<String, Object>> reprocess(Authentication auth) throws com.fasterxml.jackson.core.JsonProcessingException {
-        UUID jobId = uploadJobService.createReprocessJob(auth.getName());
-        return ResponseEntity.accepted().body(Map.of("jobId", jobId));
+    public ResponseEntity<Map<String, Object>> reprocess(Authentication auth) {
+        try {
+            UUID jobId = uploadJobService.createReprocessJob(auth.getName());
+            return ResponseEntity.accepted().body(Map.of("jobId", jobId));
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to serialize job");
+        }
     }
 }

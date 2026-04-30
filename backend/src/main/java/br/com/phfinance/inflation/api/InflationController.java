@@ -47,7 +47,7 @@ public class InflationController {
     @PostMapping(value = "/uploads", consumes = "multipart/form-data")
     public ResponseEntity<Map<String, Object>> upload(
             @RequestParam("file") MultipartFile file,
-            Authentication auth) throws java.io.IOException {
+            Authentication auth) {
         if (file.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File must not be empty");
         }
@@ -58,9 +58,13 @@ public class InflationController {
         if (!VALID_SPREADSHEET_TYPES.contains(file.getContentType())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Apenas arquivos XLS/XLSX são aceitos");
         }
-        UUID jobId = uploadJobService.createInflationUploadJob(
-                file.getBytes(), file.getOriginalFilename(), auth.getName());
-        return ResponseEntity.accepted().body(Map.of("jobId", jobId));
+        try {
+            UUID jobId = uploadJobService.createInflationUploadJob(
+                    file.getBytes(), file.getOriginalFilename(), auth.getName());
+            return ResponseEntity.accepted().body(Map.of("jobId", jobId));
+        } catch (java.io.IOException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to read uploaded file");
+        }
     }
 
     @GetMapping("/comparison")

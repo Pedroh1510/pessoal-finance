@@ -34,6 +34,26 @@ class FinanceUploadWorkerTest {
     @Mock JobNotificationService notificationService;
 
     @Test
+    void handle_skipsWhenAlreadyClaimed() throws Exception {
+        Path file = tempDir.resolve("dup.pdf");
+        Files.write(file, "pdf".getBytes());
+
+        FinanceUploadWorker worker = new FinanceUploadWorker(
+                uploadJobRepository, statementUploadService,
+                notificationService, new ObjectMapper(), tempDir.toString()
+        );
+
+        UUID jobId = UUID.randomUUID();
+        when(uploadJobRepository.markProcessing(jobId)).thenReturn(0);
+
+        worker.handle(new JobMessage(jobId, "FINANCE_UPLOAD", file.toString(), "NUBANK"));
+
+        verify(uploadJobRepository, never()).markCompleted(any(), any());
+        verify(notificationService, never()).sendSuccess(any());
+        assertThat(Files.exists(file)).isFalse();
+    }
+
+    @Test
     void handle_updatesJobCompletedAndDeletesFile() throws Exception {
         Path file = tempDir.resolve("test.pdf");
         Files.write(file, "pdf".getBytes());

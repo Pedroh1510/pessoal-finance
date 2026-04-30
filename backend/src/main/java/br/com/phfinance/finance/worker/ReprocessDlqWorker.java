@@ -5,11 +5,15 @@ import br.com.phfinance.shared.jobs.UploadJob;
 import br.com.phfinance.shared.jobs.UploadJobRepository;
 import br.com.phfinance.shared.queue.JobMessage;
 import br.com.phfinance.shared.queue.RabbitMqConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
 @Component
 public class ReprocessDlqWorker {
+
+    private static final Logger log = LoggerFactory.getLogger(ReprocessDlqWorker.class);
 
     private final UploadJobRepository uploadJobRepository;
     private final JobNotificationService notificationService;
@@ -26,7 +30,11 @@ public class ReprocessDlqWorker {
         if (updated == 0) {
             return;
         }
-        UploadJob job = uploadJobRepository.findById(message.jobId()).orElseThrow();
-        notificationService.sendFailure(job);
+        UploadJob job = uploadJobRepository.findById(message.jobId()).orElse(null);
+        if (job != null) {
+            notificationService.sendFailure(job);
+        } else {
+            log.error("Job {} not found after markFailed — skipping failure notification", message.jobId());
+        }
     }
 }

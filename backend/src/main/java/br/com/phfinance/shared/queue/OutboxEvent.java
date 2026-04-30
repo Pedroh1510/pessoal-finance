@@ -41,6 +41,12 @@ public class OutboxEvent {
         this.payload = payload;
     }
 
+    OutboxEvent(UUID id, String queueName, String payload) {
+        this.id = id;
+        this.queueName = queueName;
+        this.payload = payload;
+    }
+
     @PrePersist
     void onPersist() {
         this.createdAt = OffsetDateTime.now();

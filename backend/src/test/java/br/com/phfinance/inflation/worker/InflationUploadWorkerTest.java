@@ -34,6 +34,26 @@ class InflationUploadWorkerTest {
     @Mock JobNotificationService notificationService;
 
     @Test
+    void handle_skipsWhenAlreadyClaimed() throws Exception {
+        Path file = tempDir.resolve("dup.xlsx");
+        Files.write(file, "xlsx".getBytes());
+
+        InflationUploadWorker worker = new InflationUploadWorker(
+                uploadJobRepository, marketUploadService,
+                notificationService, new ObjectMapper(), tempDir.toString()
+        );
+
+        UUID jobId = UUID.randomUUID();
+        when(uploadJobRepository.markProcessing(jobId)).thenReturn(0);
+
+        worker.handle(new JobMessage(jobId, "INFLATION_UPLOAD", file.toString(), null));
+
+        verify(uploadJobRepository, never()).markCompleted(any(), any());
+        verify(notificationService, never()).sendSuccess(any());
+        assertThat(Files.exists(file)).isFalse();
+    }
+
+    @Test
     void handle_updatesJobCompletedAndDeletesFile() throws Exception {
         Path file = tempDir.resolve("market.xlsx");
         Files.write(file, "xlsx".getBytes());

@@ -45,6 +45,7 @@ public class FinanceUploadWorker {
     public void handle(JobMessage message) throws Exception {
         int updated = uploadJobRepository.markProcessing(message.jobId());
         if (updated == 0) {
+            cleanupTempFile(message.filePath());
             return;
         }
 
@@ -68,6 +69,19 @@ public class FinanceUploadWorker {
             notificationService.sendSuccess(job);
         } else {
             log.error("markCompleted returned 0 for job {} — job may have been externally modified", message.jobId());
+        }
+    }
+
+    private void cleanupTempFile(String rawPath) {
+        if (rawPath == null) return;
+        try {
+            Path base = Path.of(tempDir).toAbsolutePath().normalize();
+            Path resolved = Path.of(rawPath).toAbsolutePath().normalize();
+            if (resolved.startsWith(base)) {
+                Files.deleteIfExists(resolved);
+            }
+        } catch (Exception e) {
+            log.warn("Could not clean up temp file {}: {}", rawPath, e.getMessage());
         }
     }
 

@@ -29,6 +29,21 @@ class ReprocessWorkerTest {
     @Mock JobNotificationService notificationService;
 
     @Test
+    void handle_skipsWhenAlreadyClaimed() throws Exception {
+        ReprocessWorker worker = new ReprocessWorker(
+                uploadJobRepository, reprocessService,
+                notificationService, new ObjectMapper()
+        );
+        UUID jobId = UUID.randomUUID();
+        when(uploadJobRepository.markProcessing(jobId)).thenReturn(0);
+
+        worker.handle(new JobMessage(jobId, "REPROCESS", null, null));
+
+        verify(reprocessService, never()).reprocess();
+        verify(notificationService, never()).sendSuccess(any());
+    }
+
+    @Test
     void handle_updatesJobCompleted() throws Exception {
         ReprocessWorker worker = new ReprocessWorker(
                 uploadJobRepository, reprocessService,

@@ -46,4 +46,16 @@ class ReprocessDlqWorkerTest {
 
         verify(notificationService, never()).sendFailure(any());
     }
+
+    @Test
+    void handle_jobDeletedBetweenMarkFailedAndFindById_skipsNotification() {
+        ReprocessDlqWorker worker = new ReprocessDlqWorker(uploadJobRepository, notificationService);
+        UUID jobId = UUID.randomUUID();
+        when(uploadJobRepository.markFailed(eq(jobId), any())).thenReturn(1);
+        when(uploadJobRepository.findById(jobId)).thenReturn(Optional.empty());
+
+        worker.handle(new JobMessage(jobId, "REPROCESS", null, null));
+
+        verify(notificationService, never()).sendFailure(any());
+    }
 }
