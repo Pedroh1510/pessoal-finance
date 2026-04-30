@@ -70,11 +70,11 @@ export async function categorizeTransaction(id: string, categoryId: string): Pro
   await api.put(`/finance/transactions/${id}/category`, { categoryId })
 }
 
-export async function uploadStatement(file: File, bankName: BankName): Promise<UploadResult> {
+export async function uploadStatement(file: File, bankName: BankName): Promise<{ jobId: string }> {
   const formData = new FormData()
   formData.append('file', file)
   formData.append('bankName', bankName)
-  const { data } = await api.post<UploadResult>('/finance/uploads', formData, {
+  const { data } = await api.post<{ jobId: string }>('/finance/uploads', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   })
   return data
@@ -112,7 +112,7 @@ export async function deleteInternalAccountRule(id: string): Promise<void> {
   await api.delete(`/finance/rules/internal-accounts/${id}`)
 }
 
-export async function reprocessTransactions(): Promise<ReprocessResult> {
-  const { data } = await api.post<ReprocessResult>('/finance/reprocess')
+export async function reprocessTransactions(): Promise<{ jobId: string }> {
+  const { data } = await api.post<{ jobId: string }>('/finance/reprocess')
   return data
 }

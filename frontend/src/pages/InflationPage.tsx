@@ -1,4 +1,4 @@
-import { useRef, useState, type CSSProperties, type FormEvent } from 'react'
+import { useRef, useState, useEffect, type CSSProperties, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
@@ -8,9 +8,9 @@ import {
   getInflationComparison,
   getInflationItems,
   uploadInflation,
-  type InflationUploadResult,
   type MarketItemDTO,
 } from '../lib/inflation'
+import { getJob, isTerminal } from '../lib/jobs'
 
 const cardStyle: CSSProperties = {
   background: 'var(--color-surface)',
@@ -52,37 +52,56 @@ export default function InflationPage() {
   const [fromPeriod, setFromPeriod] = useState('')
   const [toPeriod, setToPeriod] = useState('')
 
+  const [jobIds, setJobIds] = useState<string[]>([])
+  const [jobResults, setJobResults] = useState<import('../lib/jobs').JobResponse[]>([])
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
   const canShowChart = !!(ncmFilter || descriptionFilter) && !!fromPeriod && !!toPeriod
+
+  useEffect(() => {
+    const pending = jobIds.filter(
+      (id) => !jobResults.find((j) => j.id === id && isTerminal(j.status))
+    )
+    if (pending.length === 0) {
+      if (pollingRef.current) clearInterval(pollingRef.current)
+      return
+    }
+    pollingRef.current = setInterval(async () => {
+      for (const id of pending) {
+        try {
+          const job = await getJob(id)
+          setJobResults((prev) => [...prev.filter((j) => j.id !== id), job])
+          if (isTerminal(job.status)) {
+            queryClient.invalidateQueries({ queryKey: ['inflation-items'] })
+          }
+        } catch { /* ignore polling errors */ }
+      }
+    }, 2000)
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current)
+    }
+  }, [jobIds, jobResults, queryClient])
 
   const uploadMutation = useMutation({
     mutationFn: async (filesToUpload: File[]) => {
-      let total: InflationUploadResult = { purchasesCreated: 0, purchasesSkipped: 0, itemsImported: 0 }
+      const ids: string[] = []
       for (let i = 0; i < filesToUpload.length; i++) {
         setUploadProgress({ current: i + 1, total: filesToUpload.length })
-        const result = await uploadInflation(filesToUpload[i])
-        total = {
-          purchasesCreated: total.purchasesCreated + result.purchasesCreated,
-          purchasesSkipped: total.purchasesSkipped + result.purchasesSkipped,
-          itemsImported: total.itemsImported + result.itemsImported,
-        }
+        const { jobId } = await uploadInflation(filesToUpload[i])
+        ids.push(jobId)
       }
-      return total
+      return ids
     },
-    onSuccess: (result) => {
-      const skippedMsg = result.purchasesSkipped > 0
-        ? ` (${result.purchasesSkipped} já existia${result.purchasesSkipped > 1 ? 'm' : ''})`
-        : ''
-      setUploadMessage(
-        `${result.purchasesCreated} nota${result.purchasesCreated !== 1 ? 's' : ''} fiscal importada${result.purchasesCreated !== 1 ? 's' : ''}${skippedMsg}, ${result.itemsImported} itens.`
-      )
+    onSuccess: (ids) => {
+      setJobIds((prev) => [...prev, ...ids])
+      setUploadMessage(`${ids.length} upload(s) enviado(s). Processando em background…`)
       setIsError(false)
       setUploadProgress(null)
       setFiles([])
       if (inputRef.current) inputRef.current.value = ''
-      queryClient.invalidateQueries({ queryKey: ['inflation-items'] })
     },
     onError: () => {
-      setUploadMessage('Erro ao importar planilha.')
+      setUploadMessage('Erro ao enviar arquivo.')
       setIsError(true)
       setUploadProgress(null)
     },

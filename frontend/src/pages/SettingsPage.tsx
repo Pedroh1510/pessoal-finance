@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import {
@@ -17,6 +17,7 @@ import {
   deleteInternalAccountRule,
   reprocessTransactions,
 } from '../lib/finance'
+import { getJob, isTerminal } from '../lib/jobs'
 
 type Tab = 'categories' | 'recipient-rules' | 'internal-accounts' | 'reprocess'
 
@@ -367,26 +368,37 @@ function InternalAccountsTab() {
 
 /* ─── Reprocess Tab ─── */
 
-interface ReprocessResultState {
-  categorized: number
-  typeChanged: number
-}
-
 function ReprocessTab() {
-  const queryClient = useQueryClient()
-  const [result, setResult] = useState<ReprocessResultState | null>(null)
+  const [jobId, setJobId] = useState<string | null>(null)
+  const [job, setJob] = useState<import('../lib/jobs').JobResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(() => {
+    if (!jobId || (job && isTerminal(job.status))) {
+      if (pollingRef.current) clearInterval(pollingRef.current)
+      return
+    }
+    pollingRef.current = setInterval(async () => {
+      try {
+        const updated = await getJob(jobId)
+        setJob(updated)
+      } catch { /* ignore polling errors */ }
+    }, 2000)
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current)
+    }
+  }, [jobId, job])
 
   const { mutate: run, isPending } = useMutation({
     mutationFn: reprocessTransactions,
-    onSuccess: (data) => {
+    onSuccess: ({ jobId: id }) => {
       setError(null)
-      setResult(data)
-      queryClient.invalidateQueries({ queryKey: ['transactions'] })
+      setJob(null)
+      setJobId(id)
     },
     onError: (err: unknown) => {
-      const message = err instanceof Error ? err.message : 'Erro ao reprocessar transações.'
-      setError(message)
+      setError(err instanceof Error ? err.message : 'Erro ao reprocessar.')
     },
   })
 
@@ -400,15 +412,15 @@ function ReprocessTab() {
       </p>
 
       <button
-        onClick={() => { setResult(null); setError(null); run() }}
-        disabled={isPending}
+        onClick={() => { setJob(null); setJobId(null); setError(null); run() }}
+        disabled={isPending || (!!job && !isTerminal(job.status))}
         style={{
           ...primaryBtnStyle,
           opacity: isPending ? 0.65 : 1,
           cursor: isPending ? 'not-allowed' : 'pointer',
         }}
       >
-        {isPending ? 'Processando...' : 'Reprocessar transações'}
+        {isPending ? 'Enviando...' : 'Reprocessar transações'}
       </button>
 
       {error && (
@@ -416,11 +428,20 @@ function ReprocessTab() {
           {error}
         </p>
       )}
-
-      {result && (
+      {jobId && !job && (
+        <p style={{ marginTop: '1rem', fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>
+          Aguardando processamento…
+        </p>
+      )}
+      {job?.status === 'COMPLETED' && job.result && (
         <p style={{ marginTop: '1.25rem', fontSize: '0.9rem', color: 'var(--color-text)' }}>
-          <strong>{result.categorized}</strong> transação(ões) categorizada(s).{' '}
-          <strong>{result.typeChanged}</strong> tipo(s) alterado(s) para Transferência Interna.
+          <strong>{job.result.categorized}</strong> transação(ões) categorizada(s).{' '}
+          <strong>{job.result.typeChanged}</strong> tipo(s) alterado(s) para Transferência Interna.
+        </p>
+      )}
+      {job?.status === 'FAILED' && (
+        <p role="alert" style={{ marginTop: '1rem', color: 'var(--color-danger)', fontSize: '0.9rem' }}>
+          {job.errorMessage ?? 'Falha no reprocessamento.'}
         </p>
       )}
     </div>

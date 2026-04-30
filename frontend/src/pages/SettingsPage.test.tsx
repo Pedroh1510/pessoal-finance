@@ -26,7 +26,15 @@ vi.mock('../lib/finance', () => ({
   getInternalAccountRules: vi.fn().mockResolvedValue([]),
   createInternalAccountRule: vi.fn().mockResolvedValue(undefined),
   deleteInternalAccountRule: vi.fn().mockResolvedValue(undefined),
-  reprocessTransactions: vi.fn().mockResolvedValue({ categorized: 2, typeChanged: 1 }),
+  reprocessTransactions: vi.fn().mockResolvedValue({ jobId: 'job-1' }),
+}))
+
+vi.mock('../lib/jobs', () => ({
+  getJob: vi.fn().mockResolvedValue({
+    id: 'job-1', type: 'REPROCESS', status: 'COMPLETED',
+    result: { categorized: 2, typeChanged: 1 }, errorMessage: null, createdAt: '', updatedAt: '',
+  }),
+  isTerminal: (status: string) => status === 'COMPLETED' || status === 'FAILED',
 }))
 
 function createWrapper() {
@@ -92,7 +100,7 @@ describe('SettingsPage', () => {
     )
 
     await waitFor(() =>
-      expect(screen.getByText(/transação\(ões\) categorizada\(s\)/i)).toBeInTheDocument()
+      expect(screen.getByText(/aguardando processamento/i)).toBeInTheDocument()
     )
   })
 })

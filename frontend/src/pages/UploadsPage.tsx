@@ -1,60 +1,72 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useForm } from 'react-hook-form'
-import { uploadStatement, BankName, UploadResult } from '../lib/finance'
+import { uploadStatement, BankName } from '../lib/finance'
+import { getJob, JobResponse, isTerminal } from '../lib/jobs'
 
 interface UploadFormValues {
   bank: BankName
 }
 
-interface UploadHistoryEntry {
+interface UploadEntry {
   filename: string
   bank: BankName
-  result: UploadResult
-  uploadedAt: Date
-}
-
-interface UploadFailure {
-  filename: string
-  error: string
+  jobId: string
+  job: JobResponse | null
 }
 
 export default function UploadsPage() {
   const [files, setFiles] = useState<File[]>([])
-  const [history, setHistory] = useState<UploadHistoryEntry[]>([])
+  const [entries, setEntries] = useState<UploadEntry[]>([])
   const [loading, setLoading] = useState(false)
-  const [failures, setFailures] = useState<UploadFailure[]>([])
+  const [failures, setFailures] = useState<{ filename: string; error: string }[]>([])
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const { register, handleSubmit, reset } = useForm<UploadFormValues>({
     defaultValues: { bank: 'NUBANK' },
   })
 
+  useEffect(() => {
+    const pending = entries.filter((e) => e.job === null || !isTerminal(e.job.status))
+    if (pending.length === 0) {
+      if (pollingRef.current) clearInterval(pollingRef.current)
+      return
+    }
+    pollingRef.current = setInterval(async () => {
+      for (const entry of pending) {
+        try {
+          const job = await getJob(entry.jobId)
+          setEntries((prev) =>
+            prev.map((e) => (e.jobId === entry.jobId ? { ...e, job } : e))
+          )
+        } catch { /* ignore polling errors */ }
+      }
+    }, 2000)
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current)
+    }
+  }, [entries])
+
   const onSubmit = async (values: UploadFormValues) => {
     if (files.length === 0) return
-
     setLoading(true)
     setFailures([])
-
-    const newFailures: UploadFailure[] = []
-
-    try {
-      for (const file of files) {
-        try {
-          const result = await uploadStatement(file, values.bank)
-          setHistory((prev) => [
-            { filename: file.name, bank: values.bank, result, uploadedAt: new Date() },
-            ...prev,
-          ])
-        } catch (err: unknown) {
-          const message = err instanceof Error ? err.message : 'Erro ao realizar upload.'
-          newFailures.push({ filename: file.name, error: message })
-        }
+    const newFailures: { filename: string; error: string }[] = []
+    for (const file of files) {
+      try {
+        const { jobId } = await uploadStatement(file, values.bank)
+        setEntries((prev) => [
+          { filename: file.name, bank: values.bank, jobId, job: null },
+          ...prev,
+        ])
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Erro ao realizar upload.'
+        newFailures.push({ filename: file.name, error: message })
       }
-      setFailures(newFailures)
-      setFiles([])
-      reset()
-    } finally {
-      setLoading(false)
     }
+    setFailures(newFailures)
+    setFiles([])
+    reset()
+    setLoading(false)
   }
 
   return (
@@ -76,7 +88,6 @@ export default function UploadsPage() {
                 <option value="INTER">Inter</option>
               </select>
             </label>
-
             <label style={labelStyle}>
               Arquivo PDF
               <input
@@ -84,7 +95,6 @@ export default function UploadsPage() {
                 accept="application/pdf"
                 multiple
                 onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
-                style={{ fontSize: '0.9rem' }}
                 aria-label="Selecionar arquivos PDF"
               />
               {files.length > 0 && (
@@ -93,15 +103,23 @@ export default function UploadsPage() {
                 </span>
               )}
             </label>
-
             {failures.length > 0 && (
-              <ul role="alert" style={{ margin: 0, paddingLeft: '1.2rem', color: 'var(--color-danger)', fontSize: '0.875rem' }}>
+              <ul
+                role="alert"
+                style={{
+                  margin: 0,
+                  paddingLeft: '1.2rem',
+                  color: 'var(--color-danger)',
+                  fontSize: '0.875rem',
+                }}
+              >
                 {failures.map((f) => (
-                  <li key={f.filename}><strong>{f.filename}</strong>: {f.error}</li>
+                  <li key={f.filename}>
+                    <strong>{f.filename}</strong>: {f.error}
+                  </li>
                 ))}
               </ul>
             )}
-
             <button
               type="submit"
               disabled={loading || files.length === 0}
@@ -123,39 +141,67 @@ export default function UploadsPage() {
         </form>
       </div>
 
-      {history.length > 0 && (
+      {entries.length > 0 && (
         <div style={{ marginTop: '2rem' }}>
-          <h2 style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>Histórico de uploads</h2>
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {history.map((entry, i) => (
-              <li key={i} style={{ ...cardStyle, padding: '1rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                  <strong style={{ fontSize: '0.9rem' }}>{entry.filename}</strong>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                    {entry.uploadedAt.toLocaleString('pt-BR')}
-                  </span>
-                </div>
-                <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-                  Banco: <strong>{entry.bank}</strong>
-                </div>
+          <h2 style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>Uploads em andamento</h2>
+          <ul
+            style={{
+              listStyle: 'none',
+              padding: 0,
+              margin: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.75rem',
+            }}
+          >
+            {entries.map((entry) => (
+              <li key={entry.jobId} style={{ ...cardStyle, padding: '1rem' }}>
                 <div
-                  style={{
-                    marginTop: '0.5rem',
-                    display: 'flex',
-                    gap: '1.5rem',
-                    fontSize: '0.875rem',
-                  }}
+                  style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}
                 >
-                  <span>
-                    <strong style={{ color: 'var(--color-accent)' }}>{entry.result.total}</strong> transações importadas
-                  </span>
-                  <span>
-                    <strong style={{ color: 'var(--color-purple)' }}>{entry.result.internalTransfers}</strong> transferências internas
-                  </span>
-                  <span>
-                    <strong style={{ color: 'var(--color-warning)' }}>{entry.result.uncategorized}</strong> sem categoria
+                  <strong style={{ fontSize: '0.9rem' }}>{entry.filename}</strong>
+                  <span style={{ fontSize: '0.8rem', color: statusColor(entry.job?.status) }}>
+                    {entry.job?.status ?? 'Enviando...'}
                   </span>
                 </div>
+                {entry.job?.status === 'COMPLETED' && entry.job.result && (
+                  <div
+                    style={{ display: 'flex', gap: '1.5rem', fontSize: '0.875rem', marginTop: '0.5rem' }}
+                  >
+                    <span>
+                      <strong style={{ color: 'var(--color-accent)' }}>
+                        {entry.job.result.total}
+                      </strong>{' '}
+                      transações
+                    </span>
+                    <span>
+                      <strong style={{ color: 'var(--color-purple)' }}>
+                        {entry.job.result.internalTransfers}
+                      </strong>{' '}
+                      internas
+                    </span>
+                    <span>
+                      <strong style={{ color: 'var(--color-warning)' }}>
+                        {entry.job.result.uncategorized}
+                      </strong>{' '}
+                      sem categoria
+                    </span>
+                  </div>
+                )}
+                {entry.job?.status === 'FAILED' && (
+                  <p
+                    style={{ margin: '0.5rem 0 0', color: 'var(--color-danger)', fontSize: '0.875rem' }}
+                  >
+                    {entry.job.errorMessage ?? 'Erro desconhecido'}
+                  </p>
+                )}
+                {(!entry.job || !isTerminal(entry.job.status)) && (
+                  <p
+                    style={{ margin: '0.5rem 0 0', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}
+                  >
+                    Processando… (atualiza automaticamente)
+                  </p>
+                )}
               </li>
             ))}
           </ul>
@@ -163,6 +209,12 @@ export default function UploadsPage() {
       )}
     </div>
   )
+}
+
+function statusColor(status?: string): string {
+  if (status === 'COMPLETED') return 'var(--color-success)'
+  if (status === 'FAILED') return 'var(--color-danger)'
+  return 'var(--color-text-muted)'
 }
 
 const cardStyle: React.CSSProperties = {
