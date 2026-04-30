@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -43,6 +44,9 @@ class FinanceControllerIT {
     @MockBean
     JavaMailSender mailSender;
 
+    @MockBean
+    RabbitTemplate rabbitTemplate;
+
     @Autowired
     MockMvc mockMvc;
 
@@ -63,7 +67,7 @@ class FinanceControllerIT {
     }
 
     @Test
-    void uploadNubankStatement_returns200_withTotalGreaterThanZero() throws Exception {
+    void uploadNubankStatement_returns202_withJobId() throws Exception {
         byte[] pdfBytes = loadNubankPdf();
         MockMultipartFile file = new MockMultipartFile(
                 "file", "statement.pdf", "application/pdf", pdfBytes);
@@ -71,8 +75,8 @@ class FinanceControllerIT {
         mockMvc.perform(multipart("/api/finance/uploads")
                         .file(file)
                         .param("bankName", "NUBANK"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.total").isNumber());
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.jobId").isString());
     }
 
     @Test

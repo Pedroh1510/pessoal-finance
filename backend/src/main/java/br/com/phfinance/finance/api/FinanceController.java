@@ -5,24 +5,24 @@ import br.com.phfinance.finance.application.InternalAccountRuleService;
 import br.com.phfinance.finance.application.RecipientCategoryRuleDTO;
 import br.com.phfinance.finance.application.RecipientRuleService;
 import br.com.phfinance.finance.application.ReprocessResult;
-import br.com.phfinance.finance.application.StatementUploadService;
 import br.com.phfinance.finance.application.TransactionDTO;
 import br.com.phfinance.finance.application.TransactionReprocessService;
 import br.com.phfinance.finance.application.TransactionService;
-import br.com.phfinance.finance.application.UploadResult;
 import br.com.phfinance.finance.domain.BankName;
 import br.com.phfinance.finance.domain.TransactionType;
+import br.com.phfinance.shared.jobs.UploadJobService;
 import java.util.Arrays;
 import java.util.List;
 import java.time.YearMonth;
+import java.util.Map;
 import java.util.UUID;
-import java.io.IOException;
 import java.util.stream.Collectors;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -40,19 +40,19 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping("/api/finance")
 public class FinanceController {
 
-    private final StatementUploadService statementUploadService;
+    private final UploadJobService uploadJobService;
     private final TransactionService transactionService;
     private final RecipientRuleService recipientRuleService;
     private final InternalAccountRuleService internalAccountRuleService;
     private final TransactionReprocessService transactionReprocessService;
 
     public FinanceController(
-            StatementUploadService statementUploadService,
+            UploadJobService uploadJobService,
             TransactionService transactionService,
             RecipientRuleService recipientRuleService,
             InternalAccountRuleService internalAccountRuleService,
             TransactionReprocessService transactionReprocessService) {
-        this.statementUploadService = statementUploadService;
+        this.uploadJobService = uploadJobService;
         this.transactionService = transactionService;
         this.recipientRuleService = recipientRuleService;
         this.internalAccountRuleService = internalAccountRuleService;
@@ -62,23 +62,21 @@ public class FinanceController {
     private static final long MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 
     @PostMapping(value = "/uploads", consumes = "multipart/form-data")
-    public ResponseEntity<UploadResult> upload(
+    public ResponseEntity<Map<String, Object>> upload(
             @RequestParam("file") MultipartFile file,
-            @RequestParam("bankName") String bankName) {
+            @RequestParam("bankName") String bankName,
+            Authentication auth) throws java.io.IOException {
         if (file.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File must not be empty");
         }
         if (file.getSize() > MAX_UPLOAD_SIZE_BYTES) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File exceeds maximum allowed size of 10 MB");
         }
-        String contentType = file.getContentType();
-        if (!"application/pdf".equals(contentType)) {
+        if (!"application/pdf".equals(file.getContentType())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only PDF files are accepted");
         }
-
-        BankName bank;
         try {
-            bank = BankName.valueOf(bankName.toUpperCase());
+            BankName.valueOf(bankName.toUpperCase());
         } catch (IllegalArgumentException e) {
             String valid = Arrays.stream(BankName.values())
                     .map(Enum::name)
@@ -86,15 +84,9 @@ public class FinanceController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Invalid bank name '" + bankName + "'. Valid values: " + valid);
         }
-
-        byte[] bytes;
-        try {
-            bytes = file.getBytes();
-        } catch (IOException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Failed to read uploaded file");
-        }
-        UploadResult result = statementUploadService.upload(bytes, bank);
-        return ResponseEntity.ok(result);
+        UUID jobId = uploadJobService.createFinanceUploadJob(
+                file.getBytes(), file.getOriginalFilename(), bankName, auth.getName());
+        return ResponseEntity.accepted().body(Map.of("jobId", jobId));
     }
 
     @GetMapping("/transactions")
