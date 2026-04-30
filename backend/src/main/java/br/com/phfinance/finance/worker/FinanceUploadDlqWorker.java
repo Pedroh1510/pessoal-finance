@@ -50,7 +50,11 @@ public class FinanceUploadDlqWorker {
             }
         }
 
-        UploadJob job = uploadJobRepository.findById(message.jobId()).orElseThrow();
-        notificationService.sendFailure(job);
+        UploadJob job = uploadJobRepository.findById(message.jobId()).orElse(null);
+        if (job != null) {
+            notificationService.sendFailure(job);
+        } else {
+            log.error("Job {} not found after markFailed — skipping failure notification", message.jobId());
+        }
     }
 }

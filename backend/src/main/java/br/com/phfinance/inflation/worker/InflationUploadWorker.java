@@ -50,11 +50,12 @@ public class InflationUploadWorker {
         Path filePath = validatePath(message.filePath());
         byte[] bytes = Files.readAllBytes(filePath);
 
-        UploadJob job = uploadJobRepository.findById(message.jobId()).orElseThrow();
-        InflationUploadResult result = marketUploadService.upload(bytes, job.getOriginalFilename());
+        String originalFilename = uploadJobRepository.findById(message.jobId())
+                .orElseThrow().getOriginalFilename();
+        InflationUploadResult result = marketUploadService.upload(bytes, originalFilename);
 
         String resultJson = objectMapper.writeValueAsString(result);
-        uploadJobRepository.markCompleted(message.jobId(), resultJson);
+        int completedCount = uploadJobRepository.markCompleted(message.jobId(), resultJson);
 
         try {
             Files.deleteIfExists(filePath);
@@ -62,8 +63,12 @@ public class InflationUploadWorker {
             log.warn("Could not delete temp file {}: {}", filePath, e.getMessage());
         }
 
-        UploadJob completed = uploadJobRepository.findById(message.jobId()).orElseThrow();
-        notificationService.sendSuccess(completed);
+        if (completedCount > 0) {
+            UploadJob job = uploadJobRepository.findById(message.jobId()).orElseThrow();
+            notificationService.sendSuccess(job);
+        } else {
+            log.error("markCompleted returned 0 for job {} — job may have been externally modified", message.jobId());
+        }
     }
 
     private Path validatePath(String rawPath) {

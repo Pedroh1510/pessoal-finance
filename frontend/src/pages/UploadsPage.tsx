@@ -29,6 +29,10 @@ export default function UploadsPage() {
   useEffect(() => {
     pollingRef.current = setInterval(async () => {
       const pending = entriesRef.current.filter((e) => e.job === null || !isTerminal(e.job.status))
+      if (pending.length === 0) {
+        clearInterval(pollingRef.current!)
+        return
+      }
       for (const entry of pending) {
         try {
           const job = await getJob(entry.jobId)

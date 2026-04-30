@@ -104,7 +104,9 @@ public class UploadJobService {
     }
 
     private void validateOriginalFilename(String filename) {
-        if (filename == null) return;
+        if (filename == null || filename.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Filename is required");
+        }
         resolveAndValidatePath(filename);
     }
 
@@ -117,9 +119,13 @@ public class UploadJobService {
         return resolved;
     }
 
+    private static final java.util.Set<String> ALLOWED_EXTENSIONS = java.util.Set.of("pdf", "xls", "xlsx", "csv");
+
     private String extractExtension(String filename) {
         if (filename == null) return "bin";
         int dot = filename.lastIndexOf('.');
-        return dot >= 0 ? filename.substring(dot + 1) : "bin";
+        if (dot < 0) return "bin";
+        String ext = filename.substring(dot + 1).toLowerCase();
+        return ALLOWED_EXTENSIONS.contains(ext) ? ext : "bin";
     }
 }

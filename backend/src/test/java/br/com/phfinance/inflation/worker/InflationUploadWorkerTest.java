@@ -47,6 +47,7 @@ class InflationUploadWorkerTest {
         UploadJob job = new UploadJob(JobType.INFLATION_UPLOAD, JobStatus.QUEUED, "user1");
         job.setOriginalFilename("market.xlsx");
         when(uploadJobRepository.markProcessing(jobId)).thenReturn(1);
+        when(uploadJobRepository.markCompleted(eq(jobId), any())).thenReturn(1);
         when(uploadJobRepository.findById(jobId)).thenReturn(Optional.of(job));
         when(marketUploadService.upload(any(), eq("market.xlsx")))
                 .thenReturn(new InflationUploadResult(5, 1, 30));

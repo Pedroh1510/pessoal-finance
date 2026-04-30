@@ -15,8 +15,8 @@ public interface UploadJobRepository extends JpaRepository<UploadJob, UUID> {
 
     @Modifying
     @Transactional
-    @Query("UPDATE UploadJob j SET j.status = br.com.phfinance.shared.jobs.JobStatus.COMPLETED, j.resultJson = :resultJson WHERE j.id = :id")
-    void markCompleted(UUID id, String resultJson);
+    @Query("UPDATE UploadJob j SET j.status = br.com.phfinance.shared.jobs.JobStatus.COMPLETED, j.resultJson = :resultJson WHERE j.id = :id AND j.status = br.com.phfinance.shared.jobs.JobStatus.PROCESSING")
+    int markCompleted(UUID id, String resultJson);
 
     @Modifying
     @Transactional

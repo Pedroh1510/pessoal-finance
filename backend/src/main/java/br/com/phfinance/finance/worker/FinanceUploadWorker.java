@@ -55,7 +55,7 @@ public class FinanceUploadWorker {
         UploadResult result = statementUploadService.upload(bytes, bank);
 
         String resultJson = objectMapper.writeValueAsString(result);
-        uploadJobRepository.markCompleted(message.jobId(), resultJson);
+        int completed = uploadJobRepository.markCompleted(message.jobId(), resultJson);
 
         try {
             Files.deleteIfExists(filePath);
@@ -63,8 +63,12 @@ public class FinanceUploadWorker {
             log.warn("Could not delete temp file {}: {}", filePath, e.getMessage());
         }
 
-        UploadJob job = uploadJobRepository.findById(message.jobId()).orElseThrow();
-        notificationService.sendSuccess(job);
+        if (completed > 0) {
+            UploadJob job = uploadJobRepository.findById(message.jobId()).orElseThrow();
+            notificationService.sendSuccess(job);
+        } else {
+            log.error("markCompleted returned 0 for job {} — job may have been externally modified", message.jobId());
+        }
     }
 
     private Path validatePath(String rawPath) {

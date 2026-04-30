@@ -36,6 +36,7 @@ class ReprocessWorkerTest {
         );
         UUID jobId = UUID.randomUUID();
         when(uploadJobRepository.markProcessing(jobId)).thenReturn(1);
+        when(uploadJobRepository.markCompleted(eq(jobId), any())).thenReturn(1);
         when(reprocessService.reprocess()).thenReturn(new ReprocessResult(5, 2));
         UploadJob job = new UploadJob(JobType.REPROCESS, JobStatus.QUEUED, "user1");
         when(uploadJobRepository.findById(jobId)).thenReturn(Optional.of(job));

@@ -47,6 +47,7 @@ class FinanceUploadWorkerTest {
         UploadJob job = new UploadJob(br.com.phfinance.shared.jobs.JobType.FINANCE_UPLOAD,
                 JobStatus.QUEUED, "user1");
         when(uploadJobRepository.markProcessing(jobId)).thenReturn(1);
+        when(uploadJobRepository.markCompleted(eq(jobId), any())).thenReturn(1);
         when(uploadJobRepository.findById(jobId)).thenReturn(Optional.of(job));
         when(statementUploadService.upload(any(), eq(BankName.NUBANK)))
                 .thenReturn(new UploadResult(10, 2, 3));

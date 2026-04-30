@@ -373,13 +373,19 @@ function ReprocessTab() {
   const [job, setJob] = useState<import('../lib/jobs').JobResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const jobRef = useRef(job)
 
   useEffect(() => {
-    if (!jobId || (job && isTerminal(job.status))) {
-      if (pollingRef.current) clearInterval(pollingRef.current)
-      return
-    }
+    jobRef.current = job
+  }, [job])
+
+  useEffect(() => {
+    if (!jobId) return
     pollingRef.current = setInterval(async () => {
+      if (jobRef.current && isTerminal(jobRef.current.status)) {
+        clearInterval(pollingRef.current!)
+        return
+      }
       try {
         const updated = await getJob(jobId)
         setJob(updated)
@@ -388,7 +394,7 @@ function ReprocessTab() {
     return () => {
       if (pollingRef.current) clearInterval(pollingRef.current)
     }
-  }, [jobId, job])
+  }, [jobId])
 
   const { mutate: run, isPending } = useMutation({
     mutationFn: reprocessTransactions,

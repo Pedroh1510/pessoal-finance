@@ -8,11 +8,15 @@ import br.com.phfinance.shared.jobs.UploadJobRepository;
 import br.com.phfinance.shared.queue.JobMessage;
 import br.com.phfinance.shared.queue.RabbitMqConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
 @Component
 public class ReprocessWorker {
+
+    private static final Logger log = LoggerFactory.getLogger(ReprocessWorker.class);
 
     private final UploadJobRepository uploadJobRepository;
     private final TransactionReprocessService reprocessService;
@@ -39,9 +43,13 @@ public class ReprocessWorker {
         ReprocessResult result = reprocessService.reprocess();
 
         String resultJson = objectMapper.writeValueAsString(result);
-        uploadJobRepository.markCompleted(message.jobId(), resultJson);
+        int completed = uploadJobRepository.markCompleted(message.jobId(), resultJson);
 
-        UploadJob job = uploadJobRepository.findById(message.jobId()).orElseThrow();
-        notificationService.sendSuccess(job);
+        if (completed > 0) {
+            UploadJob job = uploadJobRepository.findById(message.jobId()).orElseThrow();
+            notificationService.sendSuccess(job);
+        } else {
+            log.error("markCompleted returned 0 for job {} — job may have been externally modified", message.jobId());
+        }
     }
 }
