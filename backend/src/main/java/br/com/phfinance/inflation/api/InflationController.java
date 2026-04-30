@@ -1,16 +1,18 @@
 package br.com.phfinance.inflation.api;
 
-import br.com.phfinance.inflation.application.InflationUploadResult;
 import br.com.phfinance.inflation.application.MarketComparisonService;
 import br.com.phfinance.inflation.application.MarketItemDTO;
 import br.com.phfinance.inflation.application.MarketUploadService;
 import br.com.phfinance.inflation.application.NcmComparisonDTO;
-import java.io.IOException;
+import br.com.phfinance.shared.jobs.UploadJobService;
 import java.time.YearMonth;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,16 +29,20 @@ public class InflationController {
 
     private final MarketUploadService marketUploadService;
     private final MarketComparisonService marketComparisonService;
+    private final UploadJobService uploadJobService;
 
     public InflationController(MarketUploadService marketUploadService,
-                               MarketComparisonService marketComparisonService) {
+                               MarketComparisonService marketComparisonService,
+                               UploadJobService uploadJobService) {
         this.marketUploadService = marketUploadService;
         this.marketComparisonService = marketComparisonService;
+        this.uploadJobService = uploadJobService;
     }
 
     @PostMapping(value = "/uploads", consumes = "multipart/form-data")
-    public ResponseEntity<InflationUploadResult> upload(
-            @RequestParam("file") MultipartFile file) {
+    public ResponseEntity<Map<String, Object>> upload(
+            @RequestParam("file") MultipartFile file,
+            Authentication auth) throws java.io.IOException {
         if (file.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File must not be empty");
         }
@@ -44,16 +50,9 @@ public class InflationController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                 "File exceeds maximum allowed size of 10 MB");
         }
-        byte[] bytes;
-        try {
-            bytes = file.getBytes();
-        } catch (IOException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                "Failed to read uploaded file");
-        }
-        InflationUploadResult result = marketUploadService.upload(
-            bytes, file.getOriginalFilename());
-        return ResponseEntity.ok(result);
+        UUID jobId = uploadJobService.createInflationUploadJob(
+                file.getBytes(), file.getOriginalFilename(), auth.getName());
+        return ResponseEntity.accepted().body(Map.of("jobId", jobId));
     }
 
     @GetMapping("/comparison")

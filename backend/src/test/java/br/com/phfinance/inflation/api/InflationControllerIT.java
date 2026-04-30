@@ -11,6 +11,7 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.Test;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -37,11 +38,14 @@ class InflationControllerIT {
     @MockBean
     JavaMailSender mailSender;
 
+    @MockBean
+    RabbitTemplate rabbitTemplate;
+
     @Autowired
     MockMvc mockMvc;
 
     @Test
-    void uploadXlsx_returns200_withPurchaseAndItemCount() throws Exception {
+    void uploadXlsx_returns202_withJobId() throws Exception {
         String uniqueChave = uniqueChave();
         byte[] xlsx = buildValidXlsx(uniqueChave);
         MockMultipartFile file = new MockMultipartFile(
@@ -51,14 +55,12 @@ class InflationControllerIT {
         );
 
         mockMvc.perform(multipart("/api/inflation/uploads").file(file))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.purchasesCreated").value(1))
-            .andExpect(jsonPath("$.purchasesSkipped").value(0))
-            .andExpect(jsonPath("$.itemsImported").value(2));
+            .andExpect(status().isAccepted())
+            .andExpect(jsonPath("$.jobId").isString());
     }
 
     @Test
-    void uploadXlsx_sameFileTwice_secondUploadSkipped() throws Exception {
+    void uploadXlsx_secondFile_returns202_withJobId() throws Exception {
         String uniqueChave = uniqueChave();
         byte[] xlsx = buildValidXlsx(uniqueChave);
         MockMultipartFile file = new MockMultipartFile(
@@ -68,13 +70,8 @@ class InflationControllerIT {
         );
 
         mockMvc.perform(multipart("/api/inflation/uploads").file(file))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.purchasesCreated").value(1));
-
-        mockMvc.perform(multipart("/api/inflation/uploads").file(file))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.purchasesCreated").value(0))
-            .andExpect(jsonPath("$.purchasesSkipped").value(1));
+            .andExpect(status().isAccepted())
+            .andExpect(jsonPath("$.jobId").isString());
     }
 
     @Test
