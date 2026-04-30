@@ -4,9 +4,7 @@ import br.com.phfinance.finance.application.InternalAccountRuleDTO;
 import br.com.phfinance.finance.application.InternalAccountRuleService;
 import br.com.phfinance.finance.application.RecipientCategoryRuleDTO;
 import br.com.phfinance.finance.application.RecipientRuleService;
-import br.com.phfinance.finance.application.ReprocessResult;
 import br.com.phfinance.finance.application.TransactionDTO;
-import br.com.phfinance.finance.application.TransactionReprocessService;
 import br.com.phfinance.finance.application.TransactionService;
 import br.com.phfinance.finance.domain.BankName;
 import br.com.phfinance.finance.domain.TransactionType;
@@ -44,19 +42,16 @@ public class FinanceController {
     private final TransactionService transactionService;
     private final RecipientRuleService recipientRuleService;
     private final InternalAccountRuleService internalAccountRuleService;
-    private final TransactionReprocessService transactionReprocessService;
 
     public FinanceController(
             UploadJobService uploadJobService,
             TransactionService transactionService,
             RecipientRuleService recipientRuleService,
-            InternalAccountRuleService internalAccountRuleService,
-            TransactionReprocessService transactionReprocessService) {
+            InternalAccountRuleService internalAccountRuleService) {
         this.uploadJobService = uploadJobService;
         this.transactionService = transactionService;
         this.recipientRuleService = recipientRuleService;
         this.internalAccountRuleService = internalAccountRuleService;
-        this.transactionReprocessService = transactionReprocessService;
     }
 
     private static final long MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
@@ -153,7 +148,8 @@ public class FinanceController {
     }
 
     @PostMapping("/reprocess")
-    public ResponseEntity<ReprocessResult> reprocess() {
-        return ResponseEntity.ok(transactionReprocessService.reprocess());
+    public ResponseEntity<Map<String, Object>> reprocess(Authentication auth) throws Exception {
+        UUID jobId = uploadJobService.createReprocessJob(auth.getName());
+        return ResponseEntity.accepted().body(Map.of("jobId", jobId));
     }
 }
