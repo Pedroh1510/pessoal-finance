@@ -55,18 +55,19 @@ export default function InflationPage() {
   const [jobIds, setJobIds] = useState<string[]>([])
   const [jobResults, setJobResults] = useState<import('../lib/jobs').JobResponse[]>([])
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const jobIdsRef = useRef(jobIds)
+  const jobResultsRef = useRef(jobResults)
+
+  useEffect(() => { jobIdsRef.current = jobIds }, [jobIds])
+  useEffect(() => { jobResultsRef.current = jobResults }, [jobResults])
 
   const canShowChart = !!(ncmFilter || descriptionFilter) && !!fromPeriod && !!toPeriod
 
   useEffect(() => {
-    const pending = jobIds.filter(
-      (id) => !jobResults.find((j) => j.id === id && isTerminal(j.status))
-    )
-    if (pending.length === 0) {
-      if (pollingRef.current) clearInterval(pollingRef.current)
-      return
-    }
     pollingRef.current = setInterval(async () => {
+      const pending = jobIdsRef.current.filter(
+        (id) => !jobResultsRef.current.find((j) => j.id === id && isTerminal(j.status))
+      )
       for (const id of pending) {
         try {
           const job = await getJob(id)
@@ -80,7 +81,7 @@ export default function InflationPage() {
     return () => {
       if (pollingRef.current) clearInterval(pollingRef.current)
     }
-  }, [jobIds, jobResults, queryClient])
+  }, [queryClient])
 
   const uploadMutation = useMutation({
     mutationFn: async (filesToUpload: File[]) => {

@@ -20,18 +20,15 @@ export default function UploadsPage() {
   const [loading, setLoading] = useState(false)
   const [failures, setFailures] = useState<{ filename: string; error: string }[]>([])
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
-
-  const { register, handleSubmit, reset } = useForm<UploadFormValues>({
-    defaultValues: { bank: 'NUBANK' },
-  })
+  const entriesRef = useRef(entries)
 
   useEffect(() => {
-    const pending = entries.filter((e) => e.job === null || !isTerminal(e.job.status))
-    if (pending.length === 0) {
-      if (pollingRef.current) clearInterval(pollingRef.current)
-      return
-    }
+    entriesRef.current = entries
+  }, [entries])
+
+  useEffect(() => {
     pollingRef.current = setInterval(async () => {
+      const pending = entriesRef.current.filter((e) => e.job === null || !isTerminal(e.job.status))
       for (const entry of pending) {
         try {
           const job = await getJob(entry.jobId)
@@ -44,7 +41,11 @@ export default function UploadsPage() {
     return () => {
       if (pollingRef.current) clearInterval(pollingRef.current)
     }
-  }, [entries])
+  }, [])
+
+  const { register, handleSubmit, reset } = useForm<UploadFormValues>({
+    defaultValues: { bank: 'NUBANK' },
+  })
 
   const onSubmit = async (values: UploadFormValues) => {
     if (files.length === 0) return

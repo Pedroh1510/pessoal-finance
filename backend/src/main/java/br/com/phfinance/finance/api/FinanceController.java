@@ -148,7 +148,7 @@ public class FinanceController {
     }
 
     @PostMapping("/reprocess")
-    public ResponseEntity<Map<String, Object>> reprocess(Authentication auth) throws java.io.IOException {
+    public ResponseEntity<Map<String, Object>> reprocess(Authentication auth) throws com.fasterxml.jackson.core.JsonProcessingException {
         UUID jobId = uploadJobService.createReprocessJob(auth.getName());
         return ResponseEntity.accepted().body(Map.of("jobId", jobId));
     }

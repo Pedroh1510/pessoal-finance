@@ -9,15 +9,20 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class OutboxPublisher {
 
     private static final Logger log = LoggerFactory.getLogger(OutboxPublisher.class);
+    private static final int MAX_PUBLISH_ATTEMPTS = 5;
 
     private final OutboxEventRepository outboxEventRepository;
     private final RabbitTemplate rabbitTemplate;
     private final ObjectMapper objectMapper;
+    private final Map<UUID, Integer> failureCount = new ConcurrentHashMap<>();
 
     public OutboxPublisher(OutboxEventRepository outboxEventRepository,
                            RabbitTemplate rabbitTemplate,
@@ -41,8 +46,21 @@ public class OutboxPublisher {
                 );
                 event.setPublished(true);
                 outboxEventRepository.save(event);
+                if (event.getId() != null) failureCount.remove(event.getId());
             } catch (Exception e) {
-                log.error("Failed to publish outbox event id={}, queueName={}", event.getId(), event.getQueueName(), e);
+                UUID eventId = event.getId();
+                if (eventId != null) {
+                    int count = failureCount.merge(eventId, 1, Integer::sum);
+                    log.error("Failed to publish outbox event id={}, attempt={}/{}", eventId, count, MAX_PUBLISH_ATTEMPTS, e);
+                    if (count >= MAX_PUBLISH_ATTEMPTS) {
+                        log.error("Discarding outbox event id={} after {} failed attempts — manual intervention required", eventId, count);
+                        event.setPublished(true);
+                        outboxEventRepository.save(event);
+                        failureCount.remove(eventId);
+                    }
+                } else {
+                    log.error("Failed to publish outbox event (no id), queueName={}", event.getQueueName(), e);
+                }
             }
         }
     }

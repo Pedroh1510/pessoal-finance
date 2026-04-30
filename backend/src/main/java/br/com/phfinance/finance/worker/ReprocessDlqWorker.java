@@ -22,7 +22,10 @@ public class ReprocessDlqWorker {
 
     @RabbitListener(queues = RabbitMqConfig.FINANCE_REPROCESS_DLQ)
     public void handle(JobMessage message) {
-        uploadJobRepository.markFailed(message.jobId(), "Reprocessamento falhou após todas as tentativas");
+        int updated = uploadJobRepository.markFailed(message.jobId(), "Reprocessamento falhou após todas as tentativas");
+        if (updated == 0) {
+            return;
+        }
         UploadJob job = uploadJobRepository.findById(message.jobId()).orElseThrow();
         notificationService.sendFailure(job);
     }

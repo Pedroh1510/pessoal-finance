@@ -20,6 +20,6 @@ public interface UploadJobRepository extends JpaRepository<UploadJob, UUID> {
 
     @Modifying
     @Transactional
-    @Query("UPDATE UploadJob j SET j.status = br.com.phfinance.shared.jobs.JobStatus.FAILED, j.errorMessage = :errorMessage WHERE j.id = :id")
-    void markFailed(UUID id, String errorMessage);
+    @Query("UPDATE UploadJob j SET j.status = br.com.phfinance.shared.jobs.JobStatus.FAILED, j.errorMessage = :errorMessage WHERE j.id = :id AND j.status <> br.com.phfinance.shared.jobs.JobStatus.FAILED")
+    int markFailed(UUID id, String errorMessage);
 }

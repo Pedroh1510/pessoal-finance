@@ -39,6 +39,11 @@ public class InflationController {
         this.uploadJobService = uploadJobService;
     }
 
+    private static final java.util.Set<String> VALID_SPREADSHEET_TYPES = java.util.Set.of(
+            "application/vnd.ms-excel",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+
     @PostMapping(value = "/uploads", consumes = "multipart/form-data")
     public ResponseEntity<Map<String, Object>> upload(
             @RequestParam("file") MultipartFile file,
@@ -49,6 +54,9 @@ public class InflationController {
         if (file.getSize() > MAX_UPLOAD_SIZE_BYTES) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                 "File exceeds maximum allowed size of 10 MB");
+        }
+        if (!VALID_SPREADSHEET_TYPES.contains(file.getContentType())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Apenas arquivos XLS/XLSX são aceitos");
         }
         UUID jobId = uploadJobService.createInflationUploadJob(
                 file.getBytes(), file.getOriginalFilename(), auth.getName());

@@ -5,6 +5,8 @@ import br.com.phfinance.shared.jobs.UploadJob;
 import br.com.phfinance.shared.jobs.UploadJobRepository;
 import br.com.phfinance.shared.queue.JobMessage;
 import br.com.phfinance.shared.queue.RabbitMqConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -14,6 +16,8 @@ import java.nio.file.Path;
 
 @Component
 public class InflationUploadDlqWorker {
+
+    private static final Logger log = LoggerFactory.getLogger(InflationUploadDlqWorker.class);
 
     private final UploadJobRepository uploadJobRepository;
     private final JobNotificationService notificationService;
@@ -28,14 +32,21 @@ public class InflationUploadDlqWorker {
     }
 
     @RabbitListener(queues = RabbitMqConfig.INFLATION_UPLOAD_DLQ)
-    public void handle(JobMessage message) throws Exception {
-        uploadJobRepository.markFailed(message.jobId(), "Upload de mercado falhou após todas as tentativas");
+    public void handle(JobMessage message) {
+        int updated = uploadJobRepository.markFailed(message.jobId(), "Upload de mercado falhou após todas as tentativas");
+        if (updated == 0) {
+            return;
+        }
 
         if (message.filePath() != null) {
             Path base = Path.of(tempDir).toAbsolutePath().normalize();
             Path resolved = Path.of(message.filePath()).toAbsolutePath().normalize();
             if (resolved.startsWith(base)) {
-                Files.deleteIfExists(resolved);
+                try {
+                    Files.deleteIfExists(resolved);
+                } catch (Exception e) {
+                    log.warn("Could not delete temp file {}: {}", resolved, e.getMessage());
+                }
             }
         }
 
