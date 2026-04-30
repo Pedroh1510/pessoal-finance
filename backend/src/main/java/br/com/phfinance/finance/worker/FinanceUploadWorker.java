@@ -9,6 +9,8 @@ import br.com.phfinance.shared.jobs.UploadJobRepository;
 import br.com.phfinance.shared.queue.JobMessage;
 import br.com.phfinance.shared.queue.RabbitMqConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -18,6 +20,8 @@ import java.nio.file.Path;
 
 @Component
 public class FinanceUploadWorker {
+
+    private static final Logger log = LoggerFactory.getLogger(FinanceUploadWorker.class);
 
     private final UploadJobRepository uploadJobRepository;
     private final StatementUploadService statementUploadService;
@@ -39,7 +43,10 @@ public class FinanceUploadWorker {
 
     @RabbitListener(queues = RabbitMqConfig.FINANCE_UPLOAD_QUEUE)
     public void handle(JobMessage message) throws Exception {
-        uploadJobRepository.markProcessing(message.jobId());
+        int updated = uploadJobRepository.markProcessing(message.jobId());
+        if (updated == 0) {
+            return;
+        }
 
         Path filePath = validatePath(message.filePath());
         byte[] bytes = Files.readAllBytes(filePath);
@@ -50,7 +57,11 @@ public class FinanceUploadWorker {
         String resultJson = objectMapper.writeValueAsString(result);
         uploadJobRepository.markCompleted(message.jobId(), resultJson);
 
-        Files.deleteIfExists(filePath);
+        try {
+            Files.deleteIfExists(filePath);
+        } catch (Exception e) {
+            log.warn("Could not delete temp file {}: {}", filePath, e.getMessage());
+        }
 
         UploadJob job = uploadJobRepository.findById(message.jobId()).orElseThrow();
         notificationService.sendSuccess(job);

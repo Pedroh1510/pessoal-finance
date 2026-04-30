@@ -1,5 +1,7 @@
 package br.com.phfinance.shared.jobs;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.slf4j.Logger;
@@ -9,18 +11,24 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
+import java.util.Map;
+
 @Service
 public class JobNotificationService {
 
     private static final Logger log = LoggerFactory.getLogger(JobNotificationService.class);
 
     private final JavaMailSender mailSender;
+    private final ObjectMapper objectMapper;
     private final String from;
 
     public JobNotificationService(
             JavaMailSender mailSender,
+            ObjectMapper objectMapper,
             @Value("${app.mail.from:noreply@ph-finance.local}") String from) {
         this.mailSender = mailSender;
+        this.objectMapper = objectMapper;
         this.from = from;
     }
 
@@ -54,12 +62,10 @@ public class JobNotificationService {
         StringBuilder sb = new StringBuilder();
         sb.append("Seu upload financeiro foi processado com sucesso.\n\n");
         if (resultJson != null) {
-            String total = extractJsonField(resultJson, "total");
-            String internalTransfers = extractJsonField(resultJson, "internalTransfers");
-            String uncategorized = extractJsonField(resultJson, "uncategorized");
-            if (total != null) sb.append("Total de transações: ").append(total).append("\n");
-            if (internalTransfers != null) sb.append("Transferências internas: ").append(internalTransfers).append("\n");
-            if (uncategorized != null) sb.append("Sem categoria: ").append(uncategorized).append("\n");
+            Map<String, Object> fields = parseJson(resultJson);
+            if (fields.containsKey("total")) sb.append("Total de transações: ").append(fields.get("total")).append("\n");
+            if (fields.containsKey("internalTransfers")) sb.append("Transferências internas: ").append(fields.get("internalTransfers")).append("\n");
+            if (fields.containsKey("uncategorized")) sb.append("Sem categoria: ").append(fields.get("uncategorized")).append("\n");
         }
         return sb.toString();
     }
@@ -68,12 +74,10 @@ public class JobNotificationService {
         StringBuilder sb = new StringBuilder();
         sb.append("Seu upload de mercado foi processado com sucesso.\n\n");
         if (resultJson != null) {
-            String purchasesCreated = extractJsonField(resultJson, "purchasesCreated");
-            String purchasesSkipped = extractJsonField(resultJson, "purchasesSkipped");
-            String itemsImported = extractJsonField(resultJson, "itemsImported");
-            if (purchasesCreated != null) sb.append("Compras criadas: ").append(purchasesCreated).append("\n");
-            if (purchasesSkipped != null) sb.append("Compras ignoradas: ").append(purchasesSkipped).append("\n");
-            if (itemsImported != null) sb.append("Itens importados: ").append(itemsImported).append("\n");
+            Map<String, Object> fields = parseJson(resultJson);
+            if (fields.containsKey("purchasesCreated")) sb.append("Compras criadas: ").append(fields.get("purchasesCreated")).append("\n");
+            if (fields.containsKey("purchasesSkipped")) sb.append("Compras ignoradas: ").append(fields.get("purchasesSkipped")).append("\n");
+            if (fields.containsKey("itemsImported")) sb.append("Itens importados: ").append(fields.get("itemsImported")).append("\n");
         }
         return sb.toString();
     }
@@ -82,12 +86,20 @@ public class JobNotificationService {
         StringBuilder sb = new StringBuilder();
         sb.append("O reprocessamento foi concluído com sucesso.\n\n");
         if (resultJson != null) {
-            String categorized = extractJsonField(resultJson, "categorized");
-            String typeChanged = extractJsonField(resultJson, "typeChanged");
-            if (categorized != null) sb.append("Transações categorizadas: ").append(categorized).append("\n");
-            if (typeChanged != null) sb.append("Tipo alterado: ").append(typeChanged).append("\n");
+            Map<String, Object> fields = parseJson(resultJson);
+            if (fields.containsKey("categorized")) sb.append("Transações categorizadas: ").append(fields.get("categorized")).append("\n");
+            if (fields.containsKey("typeChanged")) sb.append("Tipo alterado: ").append(fields.get("typeChanged")).append("\n");
         }
         return sb.toString();
+    }
+
+    private Map<String, Object> parseJson(String json) {
+        try {
+            return objectMapper.readValue(json, new TypeReference<>() {});
+        } catch (Exception e) {
+            log.warn("Could not parse resultJson for email body: {}", e.getMessage());
+            return Collections.emptyMap();
+        }
     }
 
     private String buildFailureBody(UploadJob job) {
@@ -111,23 +123,7 @@ public class JobNotificationService {
             log.info("E-mail enviado para {} — assunto: {}", to, subject);
         } catch (MessagingException ex) {
             log.error("Falha ao enviar e-mail para {} — assunto: {}", to, subject, ex);
-            throw new RuntimeException("Falha ao enviar e-mail: " + ex.getMessage(), ex);
         }
     }
 
-    /**
-     * Extrai o valor de um campo de um JSON simples (sem ObjectMapper para evitar dependência
-     * extra). Funciona apenas para campos de valor primitivo no nível raiz.
-     */
-    private String extractJsonField(String json, String field) {
-        String search = "\"" + field + "\":";
-        int idx = json.indexOf(search);
-        if (idx < 0) return null;
-        int start = idx + search.length();
-        while (start < json.length() && json.charAt(start) == ' ') start++;
-        int end = start;
-        while (end < json.length() && json.charAt(end) != ',' && json.charAt(end) != '}') end++;
-        String raw = json.substring(start, end).trim();
-        return raw.isEmpty() ? null : raw.replace("\"", "");
-    }
 }

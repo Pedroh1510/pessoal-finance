@@ -53,9 +53,11 @@ class OutboxEndToEndIT {
 
     @Test
     void newJob_initiallyQueued() throws Exception {
+        // Pause OutboxPublisher via mock would be ideal, but checking immediately after save
+        // is sufficient since the scheduler fires every 2s and Testcontainers startup takes time.
         UUID jobId = uploadJobService.createReprocessJob("user@example.com");
 
         UploadJob job = uploadJobRepository.findById(jobId).orElseThrow();
-        assertThat(job.getStatus()).isIn(JobStatus.QUEUED, JobStatus.PROCESSING, JobStatus.COMPLETED);
+        assertThat(job.getStatus()).isEqualTo(JobStatus.QUEUED);
     }
 }

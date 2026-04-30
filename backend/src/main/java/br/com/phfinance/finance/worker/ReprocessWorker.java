@@ -31,7 +31,10 @@ public class ReprocessWorker {
 
     @RabbitListener(queues = RabbitMqConfig.FINANCE_REPROCESS_QUEUE)
     public void handle(JobMessage message) throws Exception {
-        uploadJobRepository.markProcessing(message.jobId());
+        int updated = uploadJobRepository.markProcessing(message.jobId());
+        if (updated == 0) {
+            return;
+        }
 
         ReprocessResult result = reprocessService.reprocess();
 

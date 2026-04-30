@@ -10,8 +10,8 @@ public interface UploadJobRepository extends JpaRepository<UploadJob, UUID> {
 
     @Modifying
     @Transactional
-    @Query("UPDATE UploadJob j SET j.status = br.com.phfinance.shared.jobs.JobStatus.PROCESSING, j.attemptCount = j.attemptCount + 1 WHERE j.id = :id")
-    void markProcessing(UUID id);
+    @Query("UPDATE UploadJob j SET j.status = br.com.phfinance.shared.jobs.JobStatus.PROCESSING, j.attemptCount = j.attemptCount + 1 WHERE j.id = :id AND j.status = br.com.phfinance.shared.jobs.JobStatus.QUEUED")
+    int markProcessing(UUID id);
 
     @Modifying
     @Transactional

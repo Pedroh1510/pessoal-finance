@@ -3,6 +3,7 @@ package br.com.phfinance.shared.jobs;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.mail.internet.MimeMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,7 +23,7 @@ class JobNotificationServiceTest {
     @BeforeEach
     void setUp() {
         when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
-        service = new JobNotificationService(mailSender, "noreply@ph-finance.local");
+        service = new JobNotificationService(mailSender, new ObjectMapper(), "noreply@ph-finance.local");
     }
 
     @Test
